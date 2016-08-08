@@ -13,6 +13,5 @@ function power.off()
     gpio.write(1, gpio.LOW)
 end
 
-
 power.init()
 power.on()
