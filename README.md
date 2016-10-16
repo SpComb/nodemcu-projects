@@ -32,3 +32,31 @@ The `src/dmx.lua` module requires a patched nodemcu-firmware for DMX output on U
 ## Running
 
     ./opt/bin/nodemcu-uploader --port /dev/ttyUSB5 exec init.lua
+
+## Usage
+
+Connects to the configured WiFi network in STA mode, using DHCP for autoconfiguration.
+
+Implements an ArtNet -> DMX bridge, listening on UDP port 6454.
+The second ESP8266 hardware UART is used to output serial DMX data on NodeMCU pin ***D4***.
+Connect this pin to a RS-485 transceiver (SN75176B), wired to an output XLR connector.
+
+Supports the Art-Net [Discovery](http://art-net.org.uk/?page_id=454), [Subscription](http://art-net.org.uk/?page_id=649) and [Streaming](http://art-net.org.uk/?page_id=456) protocols for both unicast and broadcast packets.
+
+### Art-Net
+
+Supported protocol features:
+
+* Receiving [`ArtPoll`](http://art-net.org.uk/?page_id=575) packets
+* Sending (unicast) [`ArtPollReply`](http://art-net.org.uk/?page_id=575) packets
+  * These should be broadcast, but the NodeMCU net module does not allow that
+* Receiving [`ArtDmx`](http://art-net.org.uk/?page_id=675) packets
+* Optional stream sequencing to skip duplicated/reordered packets.
+  * Packets having a non-zero `ArtDmx.Sequence` field
+* Outputting DMX for the configured Art-Net universe
+  * Configured for a single output port on universe 0
+
+## TODO
+
+The Art-Net node is hardcoded for a specific Art-Net universe (0).
+Support [`ArtAddress`](http://art-net.org.uk/?page_id=900) for dynamic configuration.
