@@ -5,6 +5,9 @@ dmx = {
 
 function dmx.init()
     uart.setup(dmx.uart_id, 250000, 8, uart.PARITY_NONE, uart.STOPBITS_2, 0)
+
+    -- initial frame
+    dmx.sendValue(0x00, 0)
 end
 
 -- Send packet as string
