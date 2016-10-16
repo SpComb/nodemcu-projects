@@ -61,11 +61,11 @@ function artnet.send_poll_reply()
         artnet.pack_string(64, artnet.name_long),         -- LongName
         artnet.pack_string(64, artnet.info_report()),     -- NodeReport
         struct.pack("H",      1 ),                        -- NumPorts
-        struct.pack("BBBB",   0, 0, 0, 0x80 + 0x0),       -- PortTypes
+        struct.pack("BBBB",   0x80 + 0x0, 0, 0, 0),       -- PortTypes
         struct.pack("BBBB",   0, 0, 0, 0),                -- GoodInput
-        struct.pack("BBBB",   0, 0, 0, 0x80),             -- GoodOutput
+        struct.pack("BBBB",   0x80, 0, 0, 0),             -- GoodOutput
         struct.pack("BBBB",   0, 0, 0, 0),                -- SwIn
-        struct.pack("BBBB",   3, 2, 1, 0),                -- SwOut
+        struct.pack("BBBB",   0, 0, 0, 0),                -- SwOut
         struct.pack("B",      0),                         -- SwVideo
         struct.pack("B",      0),                         -- SwMacro
         struct.pack("B",      0),                         -- SwRemote
