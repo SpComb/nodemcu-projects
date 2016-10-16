@@ -7,6 +7,10 @@ artnet = {
     esta_manufacturer = 0x0000,
     name_short        = "NodeMCU-ARTNET",
     name_long         = "",
+
+    -- state
+    -- TODO: reset on timeout
+    sequence    = 0,
 }
 
 function artnet.pack_string(length, s)
@@ -135,7 +139,7 @@ function artnet.on_receive(_, buf)
             channels[i] = value
         end
 
-        artnet.recv_dmx(universe, channels)
+        artnet.recv_dmx(universe, seq, channels)
     else
         print("artnet:recv unkonwn opcode=" .. opcode .. " version=" .. version)
     end
@@ -145,8 +149,22 @@ function artnet.recv_poll(flags, priority)
   artnet.send_poll_reply()
 end
 
-function artnet.recv_dmx(universe, channels)
-  if universe == artnet.universe then
-    artnet.dmx.sendChannels(channels)
+function artnet.recv_dmx(universe, sequence, channels)
+  -- universe handling
+  if universe ~= artnet.universe then
+    return
   end
+
+  -- sequence handling
+  if sequence == 0 then
+
+  elseif sequence <= artnet.sequence and artnet.sequence - sequence < 128 then
+    -- skip duplicated or reordered frame
+    return
+  else
+    artnet.sequence = sequence
+  end
+
+  -- output
+  artnet.dmx.sendChannels(channels)
 end
