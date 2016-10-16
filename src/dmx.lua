@@ -1,6 +1,8 @@
 dmx = {
     uart_id   = 1,
     gpio      = 2,
+
+    debug     = false,
 }
 
 function dmx.init()
@@ -14,10 +16,12 @@ end
 --
 -- XXX: first packet is ignored?
 function dmx.sendPacket(packet)
-    print("dmx:sendPacket: ")
+    if debug then
+      print("dmx:sendPacket: ")
 
-    for i = 1, #packet do
-        print("\t" .. string.format("%02x", packet:byte(i)))
+      for i = 1, #packet do
+          print("\t" .. string.format("%02x", packet:byte(i)))
+      end
     end
 
     -- break
