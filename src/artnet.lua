@@ -1,10 +1,12 @@
 artnet = {
     port     = 6454,
-    universe = 1,
+    universe = 0,
     dmx      = nil,
 
-    name_short  = "NodeMCU-ARTNET",
-    name_long = ""
+    oem               = 0x0000,
+    esta_manufacturer = 0x0000,
+    name_short        = "NodeMCU-ARTNET",
+    name_long         = "",
 }
 
 function artnet.pack_string(length, s)
@@ -52,24 +54,52 @@ function artnet.send_poll_reply()
         struct.pack("c4",     artnet.info_ipaddr()),      -- IpAddress
         struct.pack("H",      artnet.port),               -- PortNumber
         struct.pack("H",      app.version),               -- VersInfo
-        struct.pack("H",      0x0000 ),                   -- NetSwitch & SubSwitch
-        struct.pack("H",      0x0000 ),                   -- Oem
+        struct.pack("B",      bit.arshift(artnet.universe, 8)), -- NetSwitch
+        struct.pack("B",      bit.band(artnet.universe, 0xF0)), -- SubSwitch
+        struct.pack("H",      artnet.oem ),                -- Oem
         struct.pack("B",      0 ),                        -- Ubea
-        struct.pack("B",      0 ),                        -- Status1  Configuration flags
-        struct.pack("H",      0x0000 ),                   -- EstaMan  ESTA Manufacturer
+        struct.pack("B",      0 ),                        -- Status1 Configuration flags
+        struct.pack("H",      artnet.esta_manufacturer ), -- EstaMan ESTA Manufacturer
         artnet.pack_string(18, artnet.name_short),        -- ShortName
         artnet.pack_string(64, artnet.name_long),         -- LongName
         artnet.pack_string(64, artnet.info_report()),     -- NodeReport
         struct.pack("H",      1 ),                        -- NumPorts
-        struct.pack("BBBB",   0x80 + 0x0, 0, 0, 0),       -- PortTypes
-        struct.pack("BBBB",   0, 0, 0, 0),                -- GoodInput
-        struct.pack("BBBB",   0x80, 0, 0, 0),             -- GoodOutput
-        struct.pack("BBBB",   0, 0, 0, 0),                -- SwIn
-        struct.pack("BBBB",   0, 0, 0, 0),                -- SwOut
+        struct.pack("BBBB",                               -- PortTypes
+          0x80 + 0x0,   -- output + DMX512
+          0,
+          0,
+          0
+        ),
+        struct.pack("BBBB",                               -- GoodInput
+          0,
+          0,
+          0,
+          0
+        ),
+        struct.pack("BBBB",                               -- GoodOutput
+          0x80,         -- output
+          0,
+          0,
+          0
+        ),
+        struct.pack("BBBB",                               -- SwIn
+          0,
+          0,
+          0,
+          0
+        ),
+        struct.pack("BBBB",                               -- SwOut
+          bit.band(artnet.universe, 0x0F),
+          0,
+          0,
+          0
+        ),
         struct.pack("B",      0),                         -- SwVideo
         struct.pack("B",      0),                         -- SwMacro
         struct.pack("B",      0),                         -- SwRemote
-        struct.pack("BBBB",   0, 0, 0, 0),                -- Spare{1-3)
+        struct.pack("B",      0),                         -- Spare1
+        struct.pack("B",      0),                         -- Spare2
+        struct.pack("B",      0),                         -- Spare3
         struct.pack("B",      0),                         -- Style ?
         struct.pack("c6",     artnet.info_mac()),         -- Mac
         struct.pack("c4",     artnet.info_ipaddr()),      -- BindIp
