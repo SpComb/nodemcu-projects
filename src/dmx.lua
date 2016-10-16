@@ -8,6 +8,8 @@ function dmx.init()
 end
 
 -- Send packet as string
+--
+-- XXX: first packet is ignored?
 function dmx.sendPacket(packet)
     print("dmx:sendPacket: ")
 
@@ -27,7 +29,7 @@ end
 -- Send repeated channel
 function dmx.sendValue(value, count)
     local packet = string.char(0x00) .. string.rep(string.char(value), count)
-    
+
     dmx.sendPacket(packet)
 end
 

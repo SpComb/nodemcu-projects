@@ -129,8 +129,8 @@ function artnet.on_receive(_, buf)
 
         local channels = {}
 
-        for i = 0, length do
-            value, offset = struct.unpack("B", offset)
+        for i = 1, length do
+            value, offset = struct.unpack("B", buf, offset)
 
             channels[i] = value
         end
@@ -146,7 +146,7 @@ function artnet.recv_poll(flags, priority)
 end
 
 function artnet.recv_dmx(universe, channels)
-    if universe == artnet.universe then
-        artnet.dmx.sendChannels(channels)
-    end
+  if universe == artnet.universe then
+    artnet.dmx.sendChannels(channels)
+  end
 end
