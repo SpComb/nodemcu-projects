@@ -3,10 +3,11 @@ dofile("src/dmx.lua")
 dofile("src/wifi.lua")
 
 app = {
+    version = 0x0001,
     running = false,
 }
 
-function app.start() 
+function app.start()
     dmx.init()
 
     artnet.init(dmx)
@@ -21,7 +22,7 @@ end
 function main(event)
     if event == "init" then
         print("main: wifi setup")
-        wifi_sta()
+        wifi_client.init()
     elseif event == "wifi-configured" then
         if app.start and not app.running then
             print("main: app.start")
