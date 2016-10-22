@@ -1,3 +1,8 @@
+-- reset state
+if artnet and artnet.server then
+  artnet.server:close()
+end
+
 artnet = {
     port     = 6454,
     universe = 0,
