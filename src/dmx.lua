@@ -16,7 +16,7 @@ end
 --
 -- XXX: first packet is ignored?
 function dmx.sendPacket(packet)
-    if debug then
+    if dmx.debug then
       print("dmx:sendPacket: ")
 
       for i = 1, #packet do
