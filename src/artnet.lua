@@ -162,6 +162,8 @@ function artnet.recv_dmx(universe, sequence, channels)
 
   -- sequence handling
   if sequence == 0 then
+    -- reset
+    artnet.sequence = sequence
 
   elseif sequence <= artnet.sequence and artnet.sequence - sequence < 128 then
     -- skip duplicated or reordered frame
