@@ -136,15 +136,7 @@ function artnet.on_receive(_, buf)
 
         print("artnet:recv dmx: seq=" .. seq .. " phy=" .. phy .. " universe=" .. universe .. " length=" .. length)
 
-        local channels = {}
-
-        for i = 1, length do
-            value, offset = struct.unpack("B", buf, offset)
-
-            channels[i] = value
-        end
-
-        artnet.recv_dmx(universe, seq, channels)
+        artnet.recv_dmx(universe, seq, string.sub(buf, offset))
     else
         print("artnet:recv unkonwn opcode=" .. opcode .. " version=" .. version)
     end
@@ -154,7 +146,7 @@ function artnet.recv_poll(flags, priority)
   artnet.send_poll_reply()
 end
 
-function artnet.recv_dmx(universe, sequence, channels)
+function artnet.recv_dmx(universe, sequence, data)
   -- universe handling
   if universe ~= artnet.universe then
     return
@@ -173,5 +165,5 @@ function artnet.recv_dmx(universe, sequence, channels)
   end
 
   -- output
-  artnet.dmx.sendChannels(channels)
+  artnet.dmx.sendCommand(0x00, data)
 end
