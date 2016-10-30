@@ -5,7 +5,7 @@ end
 
 artnet = {
     port     = 6454,
-    universe = 0,
+    universe = ARTNET_UNIVERSE,
     dmx      = nil,
 
     oem               = 0x0000,
@@ -51,7 +51,7 @@ end
 --
 -- this is not per ArtNet spec, but the NodeMCU net library is really weird for UDP..
 function artnet.send(opcode, params)
-  local buf = struct.pack("<c8H", "ART-NET\0", opcode)
+  local buf = struct.pack("c8 <H", "Art-Net\0", opcode)
 
   buf = buf .. table.concat(params)
 
@@ -61,18 +61,18 @@ end
 function artnet.send_poll_reply()
     artnet.send(0x2100, {
         struct.pack("c4",     artnet.info_ipaddr()),      -- IpAddress
-        struct.pack("H",      artnet.port),               -- PortNumber
-        struct.pack("H",      app.version),               -- VersInfo
+        struct.pack("<H",     artnet.port),               -- PortNumber
+        struct.pack(">H",     app.version),               -- VersInfo
         struct.pack("B",      bit.arshift(artnet.universe, 8)), -- NetSwitch
         struct.pack("B",      bit.band(artnet.universe, 0xF0)), -- SubSwitch
-        struct.pack("H",      artnet.oem ),                -- Oem
+        struct.pack(">H",     artnet.oem ),                -- Oem
         struct.pack("B",      0 ),                        -- Ubea
         struct.pack("B",      0 ),                        -- Status1 Configuration flags
-        struct.pack("H",      artnet.esta_manufacturer ), -- EstaMan ESTA Manufacturer
+        struct.pack("<H",     artnet.esta_manufacturer ), -- EstaMan ESTA Manufacturer
         artnet.pack_string(18, artnet.name_short),        -- ShortName
         artnet.pack_string(64, artnet.name_long),         -- LongName
         artnet.pack_string(64, artnet.info_report()),     -- NodeReport
-        struct.pack("H",      1 ),                        -- NumPorts
+        struct.pack(">H",     1 ),                        -- NumPorts
         struct.pack("BBBB",                               -- PortTypes
           0x80 + 0x0,   -- output + DMX512
           0,
@@ -119,9 +119,9 @@ function artnet.send_poll_reply()
 end
 
 function artnet.on_receive(_, buf)
-    local magic, opcode, version, offset = struct.unpack("<c8HH", buf)
+    local magic, opcode, version, offset = struct.unpack("c8 <H >H", buf)
 
-    if magic ~= "ART-NET\0" then
+    if magic ~= "Art-Net\0" then
         print("artnet:recv: invalid magic")
 
     elseif opcode == 0x2000 then
@@ -132,7 +132,7 @@ function artnet.on_receive(_, buf)
         artnet.recv_poll(flags, priority)
 
     elseif opcode == 0x5000 then
-        seq, phy, universe, length, offset = struct.unpack("BBHH", buf, offset)
+        seq, phy, universe, length, offset = struct.unpack("BB <H >H", buf, offset)
 
         print("artnet:recv dmx: seq=" .. seq .. " phy=" .. phy .. " universe=" .. universe .. " length=" .. length)
 
