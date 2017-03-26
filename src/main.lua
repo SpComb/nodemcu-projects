@@ -7,31 +7,36 @@ dofile("src/wifi.lua")
 app = {
     version = 0x0001,
     running = false,
-
-    atx_psu = APP_ATX_PSU,
-    dmx     = APP_DMX,
-    p9813   = APP_P9813,
-    artnet  = APP_ARTNET,
 }
 
-p9813.spi = 1
-
 function app.start()
-  if app.atx_psu then
+  if ARTNET then
+    artnet.init(dmx, {
+      universe  = ARTNET_UNIVERSE,
+    })
+  end
+
+  if ATX_PSU then
+    atx_psu.gpio = ATX_PSU_GPIO
     atx_psu.init()
+    atx_psu.on()
   end
 
-  if app.dmx then
+  if DMX then
     dmx.init()
+
+    if ARTNET and DMX_ARTNET_ADDR then
+      artnet.patch_output(DMX_ARTNET_ADDR, dmx)
+    end
   end
 
-  if app.p9813 then
+  if P9813 then
+    p9813.spi = P9813_SPI
     p9813.init()
-    p9813.test()
-  end
 
-  if app.artnet then
-    artnet.init(dmx)
+    if ARTNET and P9813_ARTNET_ADDR then
+      artnet.patch_output(P9813_ARTNET_ADDR, p9813)
+    end
   end
 
   return true

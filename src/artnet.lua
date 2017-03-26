@@ -4,9 +4,8 @@ if artnet and artnet.server then
 end
 
 artnet = {
-    port     = 6454,
-    universe = ARTNET_UNIVERSE,
-    dmx      = nil,
+    udp_port      = 6454,
+    universe = 0,     -- bits 4.. only, bits 0..3 are from the port number
 
     oem               = 0x0000,
     esta_manufacturer = 0x0000,
@@ -22,13 +21,24 @@ function artnet.pack_string(length, s)
   return s .. string.rep("\0", length - string.len(s))
 end
 
-function artnet.init(dmx)
-    artnet.dmx = dmx
+function artnet.init(options)
+    artnet.ports = {}
+    artnet.outputs = {}
+    artnet.universe = bit.band((options.universe or 0), 0xFFF0)
     artnet.server = net.createServer(net.UDP)
     artnet.server:on("receive", artnet.on_receive)
-    artnet.server:listen(artnet.port)
+    artnet.server:listen(artnet.udp_port)
 
-    print("artnet:init: listen port=" .. artnet.port)
+    print("artnet:init: listen UDP port=" .. artnet.udp_port)
+end
+
+-- Patch output port at address 0..15
+function artnet.patch_output(addr, output)
+  table.insert(artnet.ports, {
+    addr   = addr,
+    output = output,
+  })
+  artnet.outputs[addr] = output
 end
 
 function artnet.info_mac()
@@ -47,6 +57,41 @@ function artnet.info_report()
   return string.rep("\0", 64)
 end
 
+function artnet.info_port_count()
+  return table.maxn(artnet.outputs)
+end
+
+function artnet.info_port_type(port)
+  info = artnet.ports[port]
+
+  if info and info.output then
+    return 0x80 + 0 -- output + DMX512
+  else
+    return 0
+  end
+end
+
+function artnet.info_output_status(port)
+  info = artnet.ports[port]
+
+  if info and info.output then
+    return 0x80 -- output
+  else
+    return 0
+  end
+end
+
+-- XXX: bit.band(artnet.universe, 0x0F)
+function artnet.info_output_addr(port)
+  info = artnet.ports[port]
+
+  if info then
+    return info.addr
+  else
+    return 0
+  end
+end
+
 -- Send reply packet to client
 --
 -- this is not per ArtNet spec, but the NodeMCU net library is really weird for UDP..
@@ -61,7 +106,7 @@ end
 function artnet.send_poll_reply()
     artnet.send(0x2100, {
         struct.pack("c4",     artnet.info_ipaddr()),      -- IpAddress
-        struct.pack("<H",     artnet.port),               -- PortNumber
+        struct.pack("<H",     artnet.udp_port),           -- PortNumber
         struct.pack(">H",     app.version),               -- VersInfo
         struct.pack("B",      bit.arshift(artnet.universe, 8)), -- NetSwitch
         struct.pack("B",      bit.band(artnet.universe, 0xF0)), -- SubSwitch
@@ -72,12 +117,12 @@ function artnet.send_poll_reply()
         artnet.pack_string(18, artnet.name_short),        -- ShortName
         artnet.pack_string(64, artnet.name_long),         -- LongName
         artnet.pack_string(64, artnet.info_report()),     -- NodeReport
-        struct.pack(">H",     1 ),                        -- NumPorts
+        struct.pack(">H",      artnet.info_port_count()), -- NumPorts
         struct.pack("BBBB",                               -- PortTypes
-          0x80 + 0x0,   -- output + DMX512
-          0,
-          0,
-          0
+          artnet.info_port_type(1),
+          artnet.info_port_type(2),
+          artnet.info_port_type(3),
+          artnet.info_port_type(4)
         ),
         struct.pack("BBBB",                               -- GoodInput
           0,
@@ -86,10 +131,10 @@ function artnet.send_poll_reply()
           0
         ),
         struct.pack("BBBB",                               -- GoodOutput
-          0x80,         -- output
-          0,
-          0,
-          0
+          artnet.info_output_status(1),
+          artnet.info_output_status(2),
+          artnet.info_output_status(3),
+          artnet.info_output_status(4)
         ),
         struct.pack("BBBB",                               -- SwIn
           0,
@@ -98,10 +143,10 @@ function artnet.send_poll_reply()
           0
         ),
         struct.pack("BBBB",                               -- SwOut
-          bit.band(artnet.universe, 0x0F),
-          0,
-          0,
-          0
+          artnet.info_output_addr(1),
+          artnet.info_output_addr(2),
+          artnet.info_output_addr(3),
+          artnet.info_output_addr(4)
         ),
         struct.pack("B",      0),                         -- SwVideo
         struct.pack("B",      0),                         -- SwMacro
@@ -148,7 +193,13 @@ end
 
 function artnet.recv_dmx(universe, sequence, data)
   -- universe handling
-  if universe ~= artnet.universe then
+  if bit.band(universe, 0xFFF0) ~= artnet.universe then
+    return
+  end
+
+  output = artnet.outputs[bit.band(universe, 0xF)]
+
+  if not output then
     return
   end
 
@@ -165,5 +216,5 @@ function artnet.recv_dmx(universe, sequence, data)
   end
 
   -- output
-  artnet.dmx.sendCommand(0x00, data)
+  output.artnet_dmx(data)
 end

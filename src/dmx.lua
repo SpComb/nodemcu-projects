@@ -59,3 +59,8 @@ function dmx.sendChannels(channels)
 
     dmx.sendCommand(0x00, data)
 end
+
+-- ArtNET output
+function dmx.artnet_dmx(data)
+  dmx.sendCommand(0x00, data)
+end
