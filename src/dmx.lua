@@ -7,7 +7,7 @@ dmx = {
 
 function dmx.init()
     gpio.mode(dmx.led_gpio, gpio.OUTPUT)
-    uart.setup(dmx.uart_id, 250000, 8, uart.PARITY_NONE, uart.STOPBITS_2, 0)
+    uart.setup(dmx.uart_id, 74880, 8, uart.PARITY_NONE, uart.STOPBITS_2, 0)
 
     -- initial frame
     dmx.sendValue(0x00, 0)
@@ -19,16 +19,17 @@ end
 function dmx.sendPacket(packet)
     -- start
     gpio.write(dmx.led_gpio, gpio.LOW)
-    print("dmx:sendPacket...")
 
     if dmx.debug then
+      print("dmx:sendPacket...")
+
       for i = 1, #packet do
           print("\t" .. string.format("%02x", packet:byte(i)))
       end
     end
 
-    -- break
-    uart.setup(dmx.uart_id, 125000, 8, uart.PARITY_NONE, uart.STOPBITS_2, 0)
+    -- break; 9 bits @ 74.88kbaud = 120.192us = 30.048 bits
+    uart.setup(dmx.uart_id, 74880, 8, uart.PARITY_NONE, uart.STOPBITS_2, 0)
     uart.write(dmx.uart_id, string.char(0x00))
 
     -- packet
@@ -37,7 +38,6 @@ function dmx.sendPacket(packet)
 
     -- done
     gpio.write(dmx.led_gpio, gpio.HIGH)
-    print("dmx:sendPacket done")
 end
 
 function dmx.sendCommand(command, data)

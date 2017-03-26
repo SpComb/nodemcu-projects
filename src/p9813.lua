@@ -1,10 +1,12 @@
+-- P9813 3ch LED driver
 p9813 = {
     spi     = 1,
-
-    anim    = 0,
+    count   = 1,
 }
 
 function p9813.init()
+    p9813.anim = 0
+
     spi.setup(p9813.spi, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 8);
 end
 
@@ -33,8 +35,9 @@ function p9813.tick()
    p9813.set_all(1, v, v, v)
 end
 
-p9813.init()
-p9813.set_all(1, 0, 0, 0)
+function p9813.test()
+  p9813.set_all(p9813.count, 0, 0, 0)
 
-tmr.register(0, 100, tmr.ALARM_AUTO, p9813.tick)
-tmr.start(0)
+  tmr.register(0, 100, tmr.ALARM_AUTO, p9813.tick)
+  tmr.start(0)
+end

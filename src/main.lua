@@ -1,18 +1,34 @@
 dofile("src/artnet.lua")
 dofile("src/dmx.lua")
 dofile("src/wifi.lua")
+dofile("src/p9813.lua")
 
 app = {
     version = 0x0001,
     running = false,
+
+    dmx     = false,
+    p9813   = true,
+    artnet  = false,
 }
 
+p9813.spi = 1
+
 function app.start()
+  if app.dmx then
     dmx.init()
+  end
 
+  if app.p9813 then
+    p9813.init()
+    p9813.test()
+  end
+
+  if app.artnet then
     artnet.init(dmx)
+  end
 
-    return true
+  return true
 end
 
 function app.stop()
