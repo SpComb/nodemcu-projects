@@ -11,10 +11,6 @@ artnet = {
     esta_manufacturer = 0x0000,
     name_short        = "NodeMCU-ARTNET",
     name_long         = "",
-
-    -- state
-    -- TODO: reset on timeout
-    sequence    = 0,
 }
 
 function artnet.pack_string(length, s)
@@ -33,12 +29,15 @@ function artnet.init(options)
 end
 
 -- Patch output port at address 0..15
-function artnet.patch_output(addr, output)
+function artnet.patch_output(addr, driver)
   table.insert(artnet.ports, {
     addr   = addr,
     output = output,
   })
-  artnet.outputs[addr] = output
+  artnet.outputs[addr] = {
+    driver    = driver,
+    sequence  = 0,     -- TODO: reset on timeout
+  }
 end
 
 function artnet.info_mac()
@@ -206,15 +205,15 @@ function artnet.recv_dmx(universe, sequence, data)
   -- sequence handling
   if sequence == 0 then
     -- reset
-    artnet.sequence = sequence
+    output.sequence = sequence
 
-  elseif sequence <= artnet.sequence and artnet.sequence - sequence < 128 then
+  elseif sequence <= output.sequence and output.sequence - sequence < 128 then
     -- skip duplicated or reordered frame
     return
   else
-    artnet.sequence = sequence
+    output.sequence = sequence
   end
 
   -- output
-  output.artnet_dmx(data)
+  output.driver.artnet_dmx(data)
 end
