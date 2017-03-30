@@ -29,7 +29,7 @@ function artnet.init(options)
 end
 
 -- Patch output port at address 0..15
-function artnet.patch_output(addr, driver)
+function artnet.patch_output(addr, driver, description)
   table.insert(artnet.ports, {
     addr   = addr,
     output = true,
@@ -38,6 +38,9 @@ function artnet.patch_output(addr, driver)
     driver    = driver,
     sequence  = 0,     -- TODO: reset on timeout
   }
+
+  print("artnet:init: patch output port=" .. table.maxn(artnet.outputs) .. " at addr=" .. addr .. ": " .. description)
+
 end
 
 function artnet.info_mac()

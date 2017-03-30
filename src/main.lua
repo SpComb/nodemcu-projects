@@ -26,7 +26,7 @@ function app.start()
     dmx.init()
 
     if ARTNET and DMX_ARTNET_ADDR then
-      artnet.patch_output(DMX_ARTNET_ADDR, dmx)
+      artnet.patch_output(DMX_ARTNET_ADDR, dmx, "DMX")
     end
   end
 
@@ -35,7 +35,7 @@ function app.start()
     p9813.init()
 
     if ARTNET and P9813_ARTNET_ADDR then
-      artnet.patch_output(P9813_ARTNET_ADDR, p9813)
+      artnet.patch_output(P9813_ARTNET_ADDR, p9813, "P9813")
     end
   end
 
