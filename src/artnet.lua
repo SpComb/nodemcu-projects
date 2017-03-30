@@ -32,7 +32,7 @@ end
 function artnet.patch_output(addr, driver)
   table.insert(artnet.ports, {
     addr   = addr,
-    output = output,
+    output = true,
   })
   artnet.outputs[addr] = {
     driver    = driver,
