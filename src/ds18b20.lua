@@ -6,6 +6,18 @@ DS18B20_CMD_CONVERT = 0x44
 DS18B20_CMD_WRITE = 0x4E
 DS18B20_CMD_READ = 0xBE
 
+DS18B20_CONFIG_RESOLUTION_MASK = 0x60
+DS18B20_CONFIG_RESOLUTION_9 = 0x00
+DS18B20_CONFIG_RESOLUTION_10 = 0x20
+DS18B20_CONFIG_RESOLUTION_11 = 0x40
+DS18B20_CONFIG_RESOLUTION_12 = 0x60
+
+if ds18b20 then
+  if ds18b20.search_timer then
+    ds18b20.search_timer:unregister()
+  end
+end
+
 ds18b20 = {
     pin  = 2,
 }
@@ -96,6 +108,7 @@ function ds18b20.search_done()
   print("ds18b20.search: done")
 
   -- sweep
+  -- TODO: debounce for transient faults
   for addr, flag in pairs(ds18b20.devices) do
     if not flag then
       ds18b20.devices[addr] = nil
@@ -127,7 +140,7 @@ function ds18b20.broadcast(cmd)
 end
 
 -- Send a unicast command to a slave device, and read response of size bytes as string
-function ds18b20.command(addr, cmd, size)
+function ds18b20.command(addr, cmd, data, size)
   local power = 0
 
   if ow.reset(ds18b20.pin) == 0 then
@@ -137,9 +150,15 @@ function ds18b20.command(addr, cmd, size)
   ow.select(ds18b20.pin, addr)
   ow.write(ds18b20.pin, cmd, power)
 
-  string = ow.read_bytes(ds18b20.pin, size)
+  if data then
+    os.write_bytes(ds18b20.pin, data, power)
+  end
 
-  return string
+  if size then
+    string = ow.read_bytes(ds18b20.pin, size)
+
+    return string
+  end
 end
 
 -- Send command for all devices to measure
@@ -151,19 +170,40 @@ end
 -- Returns 16-bit signed temperature in 1/16th degrees C
 -- Returns nil on error
 function ds18b20.read(addr)
-  local data = ds18b20.command(addr, DS18B20_CMD_READ, 9)
+  local data = ds18b20.command(addr, DS18B20_CMD_READ, nil, 9)
 
-  if data:byte(9) ~= ow.crc8(data:sub(1, 8)) then
+  local temp, alarm_high, alarm_low, config, crc = struct.unpack("< i2 b b B x x x B", data)
+
+  if crc ~= ow.crc8(data:sub(1, 8)) then
     -- device is disconnected?
     print("ds18b20.read: crc error")
     return nil
   end
 
-  local temp = struct.unpack("< i2", data, 1)
+  local config_resolution = bit.band(config, DS18B20_CONFIG_RESOLUTION_MASK)
   local temp_c = bit.arshift(temp, 4)
   local temp_d = bit.band(temp, 0xF)
 
-  print("ds18b20.read: temp=" .. temp .. " " .. temp_c .. " + " .. temp_d .. "/16")
+  print("ds18b20.read: " .. string.format("config={res=0x%x} temp=%d (%d + %d/16 C) alarm={high=%d, low=%d}",
+    config_resolution,
+    temp,
+    temp_c, temp_d,
+    alarm_high, alarm_low
+  ))
 
   return temp
+end
+
+-- Write configuration for device at address
+--  alarm_high: 8-bit signed high temperature in degrees C
+--  alarm_low: 8-bit signed low temperature in degrees C
+--  config: 8-bit wide config register with DS18B20_CONFIG_* bits
+function ds18b20.write(addr, alarm_high, alarm_low, config)
+  local data = struct.pack("< b b B",
+    alarm_high,
+    alarm_low,
+    bit.band(config, DS18B20_CONFIG_RESOLUTION_MASK)
+  )
+
+  ds18b20.command(addr, DS18B20_CMD_WRITE, nil, nil)
 end
