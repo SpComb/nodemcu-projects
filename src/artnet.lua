@@ -1,6 +1,6 @@
 -- reset state
-if artnet and artnet.server then
-  artnet.server:close()
+if artnet and artnet.udp_socket then
+  artnet.udp_socket:close()
 end
 
 artnet = {
@@ -21,9 +21,9 @@ function artnet.init(options)
     artnet.ports = {}
     artnet.outputs = {}
     artnet.universe = bit.band((options.universe or 0), 0xFFF0)
-    artnet.server = net.createServer(net.UDP)
-    artnet.server:on("receive", artnet.on_receive)
-    artnet.server:listen(artnet.udp_port)
+    artnet.udp_socket = net.createUDPSocket()
+    artnet.udp_socket:on("receive", artnet.on_receive)
+    artnet.udp_socket:listen(artnet.udp_port)
 
     print("artnet:init: listen UDP port=" .. artnet.udp_port)
 end
@@ -95,18 +95,18 @@ function artnet.info_output_addr(port)
 end
 
 -- Send reply packet to client
---
--- this is not per ArtNet spec, but the NodeMCU net library is really weird for UDP..
-function artnet.send(opcode, params)
+function artnet.send(port, ip, opcode, params)
+  print("artnet:send " .. ip .. ":" .. port .. ": opcode=" .. opcode)
+
   local buf = struct.pack("c8 <H", "Art-Net\0", opcode)
 
   buf = buf .. table.concat(params)
 
-  artnet.server:send(buf)
+  artnet.udp_socket:send(port, ip, buf)
 end
 
-function artnet.send_poll_reply()
-    artnet.send(0x2100, {
+function artnet.send_poll_reply(port, ip)
+    artnet.send(port, ip, 0x2100, {
         struct.pack("c4",     artnet.info_ipaddr()),      -- IpAddress
         struct.pack("<H",     artnet.udp_port),           -- PortNumber
         struct.pack(">H",     app.version),               -- VersInfo
@@ -165,35 +165,35 @@ function artnet.send_poll_reply()
     })
 end
 
-function artnet.on_receive(_, buf)
+function artnet.on_receive(sock, buf, port, ip)
     local magic, opcode, version, offset = struct.unpack("c8 <H >H", buf)
 
     if magic ~= "Art-Net\0" then
-        print("artnet:recv: invalid magic")
+        print("artnet:recv " .. ip .. ":" .. port .. ": invalid magic")
 
     elseif opcode == 0x2000 then
         flags, priority, offset = struct.unpack("BB", buf, offset)
 
-        print("artnet:recv poll: flags=" .. flags .. " priority=" .. priority)
+        print("artnet:recv " .. ip .. ":" .. port .. ": poll flags=" .. flags .. " priority=" .. priority)
 
-        artnet.recv_poll(flags, priority)
+        artnet.recv_poll(port, ip, flags, priority)
 
     elseif opcode == 0x5000 then
         seq, phy, universe, length, offset = struct.unpack("BB <H >H", buf, offset)
 
-        print("artnet:recv dmx: seq=" .. seq .. " phy=" .. phy .. " universe=" .. universe .. " length=" .. length)
+        print("artnet:recv " .. ip .. ":" .. port .. ": dmx seq=" .. seq .. " phy=" .. phy .. " universe=" .. universe .. " length=" .. length)
 
-        artnet.recv_dmx(universe, seq, string.sub(buf, offset))
+        artnet.recv_dmx(port, ip, universe, seq, string.sub(buf, offset))
     else
-        print("artnet:recv unkonwn opcode=" .. opcode .. " version=" .. version)
+        print("artnet:recv " .. ip .. ":" .. port .. ": unkonwn opcode=" .. opcode .. " version=" .. version)
     end
 end
 
-function artnet.recv_poll(flags, priority)
-  artnet.send_poll_reply()
+function artnet.recv_poll(port, ip, flags, priority)
+  artnet.send_poll_reply(port, ip)
 end
 
-function artnet.recv_dmx(universe, sequence, data)
+function artnet.recv_dmx(port, ip, universe, sequence, data)
   -- universe handling
   if bit.band(universe, 0xFFF0) ~= artnet.universe then
     return
