@@ -13,6 +13,7 @@ function app.start()
   if ARTNET then
     artnet.init(dmx, {
       universe  = ARTNET_UNIVERSE,
+      version   = app.version,
     })
   end
 

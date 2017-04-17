@@ -11,6 +11,7 @@ artnet = {
     esta_manufacturer = 0x0000,
     name_short        = "NodeMCU-ARTNET",
     name_long         = "",
+    version           = 0x0000, -- uint32
 }
 
 function artnet.pack_string(length, s)
@@ -21,6 +22,7 @@ function artnet.init(options)
     artnet.ports = {}
     artnet.outputs = {}
     artnet.universe = bit.band((options.universe or 0), 0xFFF0)
+    artnet.version = (options.version or 0)
     artnet.udp_socket = net.createUDPSocket()
     artnet.udp_socket:on("receive", artnet.on_receive)
     artnet.udp_socket:listen(artnet.udp_port)
@@ -109,7 +111,7 @@ function artnet.send_poll_reply(port, ip)
     artnet.send(port, ip, 0x2100, {
         struct.pack("c4",     artnet.info_ipaddr()),      -- IpAddress
         struct.pack("<H",     artnet.udp_port),           -- PortNumber
-        struct.pack(">H",     app.version),               -- VersInfo
+        struct.pack(">H",     artnet.version),            -- VersInfo
         struct.pack("B",      bit.arshift(artnet.universe, 8)), -- NetSwitch
         struct.pack("B",      bit.band(artnet.universe, 0xF0)), -- SubSwitch
         struct.pack(">H",     artnet.oem ),                -- Oem
