@@ -28,6 +28,7 @@ function pubsub.init(config)
   pubsub.client_id = "net.qmsk.pubsub@" .. config.node
   pubsub.server = config.server
   pubsub.port = config.port or MQTT_PORT
+  pubsub.modules = {}
 
   pubsub.mqtt_client = mqtt.Client(pubsub.client_id,
     config.keepalive or MQTT_KEEPALIVE,
@@ -39,6 +40,22 @@ function pubsub.init(config)
   pubsub.mqtt_client:on("message", pubsub.client_message)
 
   print("pubsub.init: mqtt client_id=" .. pubsub.client_id)
+end
+
+function pubsub.register_module(name, info_func)
+  pubsub.modules[name] = {
+    info_func = info_func
+  }
+end
+
+function pubsub.query_modules()
+  modules = {}
+
+  for name, module in pairs(pubsub.modules) do
+    modules[name] = module.info_func()
+  end
+
+  return modules
 end
 
 function pubsub.start()
@@ -87,12 +104,26 @@ function pubsub.publish_node()
   print("pubsub.publish_node")
 
   local payload = cjson.encode({
-    ID  = pubsub.client_id,
+    ID      = pubsub.node_id,
+    Modules = pubsub.query_modules(),
   })
 
   if pubsub.mqtt_client:publish("qmsk/nodes", payload, 0, 0) then
     print("pubsub.publish_node: mqtt publish qmsk/nodes")
   else
     print("pubsub.publish_node: mqtt publish qmsk/nodes: error")
+  end
+end
+
+function pubsub.publish_module(name, data)
+  data.Node = pubsub.node_id
+
+  local topic = "qmsk/" .. name .. "/" .. pubsub.node_id
+  local payload = cjson.encode(data)
+
+  if pubsub.mqtt_client:publish(topic, payload, 0, 0) then
+    print("pubsub.publish_module: mqtt publish " .. topic)
+  else
+    print("pubsub.publish_module: mqtt publish " .. topic .. ": error")
   end
 end
