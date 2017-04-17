@@ -2,6 +2,10 @@ DS18B20_FAMILY = 0x28
 DS18B20_SEARCH_INTERVAL = 10 * 1000 -- ms between each search
 DS18B20_SEARCH_STEP = 10 -- ms between each device search step
 
+DS18B20_READ_INTERVAL = 10 * 1000 -- ms between each device read loop
+DS18B20_READ_DELAY = 750 -- ms between measurement and read
+DS18B20_READ_STEP = 10 -- ms between each device read step
+
 DS18B20_CMD_CONVERT = 0x44
 DS18B20_CMD_WRITE = 0x4E
 DS18B20_CMD_READ = 0xBE
@@ -24,14 +28,20 @@ ds18b20 = {
 
 function ds18b20.init()
   ds18b20.search_timer = tmr.create()
+  ds18b20.read_timer = tmr.create()
   ds18b20.devices = {}
 
   ow.setup(ds18b20.pin)
 end
 
 -- Start periodic tasks
-function ds18b20.start()
+function ds18b20.start(read_func)
   ds18b20.search() -- immediately search, and then repeat
+
+  if read_func then
+    ds18b20.read_func = read_func
+    ds18b20.read_start() -- immediately read, then repeat
+  end
 end
 
 -- Start searching in interval
@@ -85,16 +95,7 @@ function ds18b20.search_device(addr)
     return print("ds18b20.search: crc fault")
   end
 
-  print("ds18b20.search: " .. string.format("[%02x]%02x:%02x:%02x:%02x:%02x:%02x<%02x>",
-    addr:byte(1),
-    addr:byte(2),
-    addr:byte(3),
-    addr:byte(4),
-    addr:byte(5),
-    addr:byte(6),
-    addr:byte(7),
-    addr:byte(8)
-  ))
+  print("ds18b20.search: " .. ds18b20.device_string(addr))
 
   if ds18b20.devices[addr] == nil then
     ds18b20.device_attach(addr)
@@ -119,12 +120,36 @@ end
 
 -- Device was added
 function ds18b20.device_attach(addr)
-  print("ds18b20.device_attach: " .. addr)
+  print("ds18b20.device_attach: " .. ds18b20.device_string(addr))
 end
 
 -- Device was removed
 function ds18b20.device_detach(addr)
-  print("ds18b20.device_detach: " .. addr)
+  print("ds18b20.device_detach: " .. ds18b20.device_string(addr))
+end
+
+function ds18b20.device_string(addr)
+  return string.format("%02x.%02x:%02x:%02x:%02x:%02x:%02x",
+    addr:byte(1),
+    addr:byte(2),
+    addr:byte(3),
+    addr:byte(4),
+    addr:byte(5),
+    addr:byte(6),
+    addr:byte(7)
+  )
+end
+
+function ds18b20.info()
+  devices = {}
+
+  for addr, state in pairs(ds18b20.devices) do
+    table.insert(devices, ds18b20.device_string(addr))
+  end
+
+  return {
+    Devices   = devices,
+  }
 end
 
 -- Send a broadcast command to all slave devices without reading any response
@@ -206,4 +231,39 @@ function ds18b20.write(addr, alarm_high, alarm_low, config)
   )
 
   ds18b20.command(addr, DS18B20_CMD_WRITE, nil, nil)
+end
+
+-- After interval, read starts
+function ds18b20.start_read()
+  ds18b20.read_timer:alarm(DS18B20_READ_INTERVAL, tmr.ALARM_SINGLE, function(timer)
+    ds18b20.read_start()
+  end)
+end
+
+-- Start read by measuring, then after delay, step reads
+function ds18b20.read_start()
+  ds18b20.measure_all()
+
+  ds18b20.read_timer:alarm(DS18B20_READ_DELAY, tmr.ALARM_SINGLE, function(timer)
+    ds18b20.read_step(nil)
+  end)
+end
+
+-- Step each device to read it
+-- Once done, re-starts the read after interval
+function ds18b20.read_step(step_device)
+  local device = next(ds18b20.devices, step_device) -- XXX: unsafe against concurrent adds
+
+  if device then
+    local temp = ds18b20.read(device)
+
+    -- report
+    ds18b20.read_func(ds18b20.device_string(device), temp)
+
+    ds18b20.read_timer:alarm(DS18B20_READ_STEP, tmr.ALARM_SINGLE, function(timer)
+      ds18b20.read_step(device)
+    end)
+  else
+    ds18b20.start_read() -- next interval
+  end
 end
