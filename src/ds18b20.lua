@@ -1,5 +1,6 @@
 DS18B20_FAMILY = 0x28
-DS18B20_SCAN_INTERVAL = 20 -- ms
+DS18B20_SEARCH_INTERVAL = 10 * 1000 -- ms between each search
+DS18B20_SEARCH_STEP = 10 -- ms between each device search step
 
 DS18B20_CMD_CONVERT = 0x44
 DS18B20_CMD_WRITE = 0x4E
@@ -16,28 +17,43 @@ function ds18b20.init()
   ow.setup(ds18b20.pin)
 end
 
--- Start a timed search
-function ds18b20.search(func)
+-- Start periodic tasks
+function ds18b20.start()
+  ds18b20.search() -- immediately search, and then repeat
+end
+
+-- Start searching in interval
+function ds18b20.start_search()
+  ds18b20.search_timer:register(DS18B20_SEARCH_INTERVAL, tmr.ALARM_SEMI, function(timer)
+    ds18b20.search()
+  end)
+  ds18b20.search_timer:start()
+end
+
+-- Start a search
+-- Calls search_start(); N * search_device(device); search_done()
+function ds18b20.search()
   ow.target_search(ds18b20.pin, DS18B20_FAMILY)
   ow.reset_search(ds18b20.pin)
 
   ds18b20.search_start()
 
-  ds18b20.search_timer:register(DS18B20_SCAN_INTERVAL, tmr.ALARM_SEMI, function(timer)
+  ds18b20.search_timer:register(DS18B20_SEARCH_STEP, tmr.ALARM_SEMI, function(timer)
     local rom_code = ow.search(ds18b20.pin)
 
     if rom_code then
       ds18b20.search_device(rom_code)
       ds18b20.search_timer:start()
     else
-      ds18b20.search_timer:unregister()
       ds18b20.search_done()
+      ds18b20.start_search() -- next search
     end
   end)
 
   ds18b20.search_timer:start()
 end
 
+-- Search started
 function ds18b20.search_start()
   print("ds18b20.search: start")
 
@@ -47,6 +63,7 @@ function ds18b20.search_start()
   end
 end
 
+-- Search found device
 function ds18b20.search_device(addr)
   if addr:len() ~= 8 then
     return print("ds18b20.search: invalid addr")
@@ -68,12 +85,13 @@ function ds18b20.search_device(addr)
   ))
 
   if ds18b20.devices[addr] == nil then
-    ds18b20.on_attach(addr)
+    ds18b20.device_attach(addr)
   end
 
   ds18b20.devices[addr] = true
 end
 
+-- Search is done, no more devices
 function ds18b20.search_done()
   print("ds18b20.search: done")
 
@@ -81,19 +99,19 @@ function ds18b20.search_done()
   for addr, flag in pairs(ds18b20.devices) do
     if not flag then
       ds18b20.devices[addr] = nil
-      ds18b20.on_detach(addr)
+      ds18b20.device_detach(addr)
     end
   end
 end
 
 -- Device was added
-function ds18b20.on_attach(addr)
-  print("ds18b20.on attach: " .. addr)
+function ds18b20.device_attach(addr)
+  print("ds18b20.device_attach: " .. addr)
 end
 
 -- Device was removed
-function ds18b20.on_detach(addr)
-  print("ds18b20.on detach: " .. addr)
+function ds18b20.device_detach(addr)
+  print("ds18b20.device_detach: " .. addr)
 end
 
 -- Send a broadcast command to all slave devices without reading any response
@@ -137,7 +155,7 @@ function ds18b20.read(addr)
 
   if data:byte(9) ~= ow.crc8(data:sub(1, 8)) then
     -- device is disconnected?
-    print("ds18b20.read: crc fault")
+    print("ds18b20.read: crc error")
     return nil
   end
 
