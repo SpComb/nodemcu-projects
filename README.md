@@ -9,6 +9,13 @@ Requires nodemcu-firmware 2.0.0:
 
 The `src/dmx.lua` module requires a patched nodemcu-firmware for DMX output on UART2 (NodeMCU pin ***D4***, `GPIO2`, `TXD1`) at 250/125 kbaud: https://github.com/SpComb/nodemcu-firmware/tree/dmx-uart2
 
+### Building
+
+* `git clone -b build/2.0.0-master_20170202+qmsk-dmx_1 https://github.com/SpComb/nodemcu-firmware`
+* `docker run --rm -it -v $PWD:/opt/nodemcu-firmware marcelstoer/nodemcu-build`
+
+Results in `bin/nodemcu_integer_build_2.0.0-master_20170202+qmsk-dmx_1_*.bin`.
+
 ### Flashing a ESP-12E with 4MiB flash
 
     nodemcu-firmware $ ./tools/esptool.py --port /dev/ttyUSB5 write_flash -fm dio -fs 32m 0x00000 nodemcu_integer_build_2.0.0-master_20170202+qmsk-dmx_1_20170417-1113.bin 0x3fc000 ~/Downloads/ESP8266_NONOS_SDK_V1.5.4.1_patch_20160704/esp_init_data_default.bin
