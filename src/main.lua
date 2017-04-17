@@ -5,7 +5,7 @@ dofile("src/p9813.lua")
 dofile("src/wifi.lua")
 
 app = {
-    version = 0x0001,
+    version = 0x0002,
     running = false,
 }
 
