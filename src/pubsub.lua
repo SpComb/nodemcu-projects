@@ -38,6 +38,7 @@ function pubsub.init(config)
   )
 
   pubsub.mqtt_client:on("message", pubsub.client_message)
+  pubsub.mqtt_client:on("offline", pubsub.client_offline)
 
   print("pubsub.init: mqtt client_id=" .. pubsub.client_id)
 end
@@ -67,7 +68,7 @@ function pubsub.start()
     secure,
     autoreconnect,
     pubsub.client_connected,
-    pubsub.client_error
+    pubsub.client_connect_error
   ) then
     print("pubsub.start: mqtt connect " .. pubsub.server .. ":" .. pubsub.port)
   else
@@ -82,8 +83,14 @@ function pubsub.client_connected(mqtt_client)
   pubsub.publish_node()
 end
 
-function pubsub.client_error(mqtt_client, reason)
-  print("pubsub.client_error: mqtt reason=" .. reason)
+-- Failed to connect
+function pubsub.client_connect_error(mqtt_client, reason)
+  print("pubsub.client_connect_error: mqtt reason=" .. reason)
+end
+
+-- Connection failed
+function pubsub.client_offline(mqtt_client)
+  print("pubsub.client_offline: mqtt")
 end
 
 function pubsub.client_message(mqtt_client, topic, message)
@@ -102,6 +109,7 @@ function pubsub.publish(topic, data, options)
     retain = 1
   end
 
+  -- XXX: PANIC not connected if autoreconnect=1?
   if pubsub.mqtt_client:publish(topic, payload, qos, retain, function(client)
     print("pubsub.publish: mqtt publish " .. topic .. ": success")
   end) then
