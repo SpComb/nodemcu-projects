@@ -140,16 +140,15 @@ function ds18b20.device_string(addr)
   )
 end
 
-function ds18b20.info()
+-- Return table of device names
+function ds18b20.list_devices()
   devices = {}
 
   for addr, state in pairs(ds18b20.devices) do
     table.insert(devices, ds18b20.device_string(addr))
   end
 
-  return {
-    Devices   = devices,
-  }
+  return devices
 end
 
 -- Send a broadcast command to all slave devices without reading any response
