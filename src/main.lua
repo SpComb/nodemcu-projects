@@ -19,6 +19,12 @@ function app.init()
   if P9813 then
     dofile("src/p9813.lua")
   end
+  if PUBSUB then
+    dofile("src/pubsub.lua")
+  end
+  if DS18B20 then
+    dofile("src/ds18b20.lua")
+  end
   print("app.init: post heapsize=" .. node.heap())
 end
 
@@ -50,6 +56,34 @@ function app.start()
 
     if ARTNET and P9813_ARTNET_ADDR then
       artnet.patch_output(P9813_ARTNET_ADDR, p9813, "P9813")
+    end
+  end
+
+  if PUBSUB then
+    pubsub.init({
+        node        = wifi.sta.gethostname(),
+        server      = PUBSUB_MQTT_SERVER
+    })
+    pubsub.start()
+  end
+
+  if DS18B20 then
+    ds18b20.init()
+
+    if PUBSUB then
+      pubsub.register_module("ds18b20", function()
+        return {
+          Devices     = ds18b20.list_devices()
+        }
+      end)
+
+      ds18b20.start(function(device, temp)
+          pubsub.publish_module("ds18b20", {
+              Node            = pubsub.node_id,
+              Device          = device,
+              Temperature_16  = temp
+          })
+      end)
     end
   end
 
