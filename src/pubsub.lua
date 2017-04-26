@@ -79,10 +79,6 @@ end
 function pubsub.client_connected(mqtt_client)
   print("pubsub.client_connected: mqtt")
 
-  pubsub.mqtt_client:subscribe("qmsk/discover", 0, function(mqtt_client)
-    print("pubsub.client_connected: mqtt subscribe qmsk.net/discover")
-  end)
-
   pubsub.publish_node()
 end
 
@@ -92,12 +88,6 @@ end
 
 function pubsub.client_message(mqtt_client, topic, message)
   print("pubsub.client_message: mqtt " .. topic)
-
-  if topic == "qmsk/discover" then
-    pubsub.publish_node()
-  else
-
-  end
 end
 
 -- publish JSON-encoded table at topic, with optional options
