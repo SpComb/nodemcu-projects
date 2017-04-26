@@ -129,7 +129,7 @@ function ds18b20.device_detach(addr)
 end
 
 function ds18b20.device_string(addr)
-  return string.format("%02x.%02x:%02x:%02x:%02x:%02x:%02x",
+  return string.format("%02x:%02x:%02x:%02x:%02x:%02x:%02x",
     addr:byte(1),
     addr:byte(2),
     addr:byte(3),
@@ -251,7 +251,7 @@ end
 -- Step each device to read it
 -- Once done, re-starts the read after interval
 function ds18b20.read_step(step_device)
-  local device = next(ds18b20.devices, step_device) -- XXX: unsafe against concurrent adds
+  local device = next(ds18b20.devices, step_device) -- XXX: unsafe against concurrent search_device()
 
   if device then
     local temp = ds18b20.read(device)
