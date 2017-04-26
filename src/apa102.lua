@@ -20,7 +20,3 @@ function apa102.set_all(count, a, r, g, b)
     local a = bit.bor(0xE0, a)
     return apa102.write(string.rep(string.char(a, b, g, r), count))
 end
-
-apa102.init()
-apa102.set_all(30, 31, 0, 0, 255)
-
