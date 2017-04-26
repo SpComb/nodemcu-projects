@@ -10,7 +10,7 @@ print("WIFI: mode=" .. wifi.getmode() .. ", phymode=" .. wifi.getphymode() .. ",
 if wifi.getmode() == wifi.STATION then
     local ssid, password, bssid_set, bssid = wifi.sta.getconfig()
     local status = wifi.sta.status()
-    
+
     print("WIFI-STA: mac=" .. wifi.sta.getmac() .. ", ssid=" .. ssid .. ", status=" .. status)
 
     if bssid_set then
@@ -22,7 +22,7 @@ if wifi.getmode() == wifi.STATION then
 
         print("WIFI-STA: bssid=" .. bssid)
     end
-    
+
     local hostname = wifi.sta.gethostname()
     local address, netmask, gateway = wifi.sta.getip()
 
@@ -38,6 +38,6 @@ if wifi.getmode() == wifi.STATION then
     if gateway == nil then
         gateway = ""
     end
-    
+
     print("WIFI-STA: hostname=" .. hostname .. ", address=" .. address .. ", netmask=" .. netmask .. ", gateway=" .. gateway)
 end
