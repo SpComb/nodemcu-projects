@@ -1,13 +1,26 @@
-dofile("src/atx_psu.lua")
-dofile("src/artnet.lua")
-dofile("src/dmx.lua")
-dofile("src/p9813.lua")
 dofile("src/wifi.lua")
 
 app = {
     version = 0x0002,
     running = false,
 }
+
+function app.init()
+  print("app.init: pre heapsize=" .. node.heap())
+  if ARTNET then
+    dofile("src/artnet.lua")
+  end
+  if ATX_PSU then
+    dofile("src/atx_psu.lua")
+  end
+  if DMX then
+    dofile("src/dmx.lua")
+  end
+  if P9813 then
+    dofile("src/p9813.lua")
+  end
+  print("app.init: post heapsize=" .. node.heap())
+end
 
 function app.start()
   if ARTNET then
@@ -40,6 +53,8 @@ function app.start()
     end
   end
 
+  print("app.start: post heapsize=" .. node.heap())
+
   return true
 end
 
@@ -49,6 +64,7 @@ end
 
 function main(event)
     if event == "init" then
+        app.init()
         print("main: wifi setup")
         wifi_client.init()
     elseif event == "wifi-configured" then
