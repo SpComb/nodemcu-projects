@@ -22,7 +22,7 @@ end
 --    username : string     -- optional username
 --    password : string     -- optional password
 function pubsub.init(config)
-  local clean_session = 1
+  local clean_session = 0
 
   pubsub.node_id = config.node
   pubsub.client_id = "net.qmsk.pubsub@" .. config.node
@@ -100,30 +100,34 @@ function pubsub.client_message(mqtt_client, topic, message)
   end
 end
 
-function pubsub.publish_node()
-  print("pubsub.publish_node")
+-- publish JSON-encoded table at topic, with optional options
+--
+--  retain: true/false
+function pubsub.publish(topic, data, options)
+  local qos = 1
+  local retain = 0
+  local payload = cjson.encode(data)
 
-  local payload = cjson.encode({
-    ID      = pubsub.node_id,
-    Modules = pubsub.query_modules(),
-  })
+  if options and options.retain then
+    retain = 1
+  end
 
-  if pubsub.mqtt_client:publish("qmsk/nodes", payload, 0, 0) then
-    print("pubsub.publish_node: mqtt publish qmsk/nodes")
+  if pubsub.mqtt_client:publish(topic, payload, qos, retain, function(client)
+    print("pubsub.publish: mqtt publish " .. topic .. ": success")
+  end) then
+    print("pubsub.publish: mqtt publish " .. topic .. "... (qos=" .. qos .. ", retain=" .. retain .. ")")
   else
-    print("pubsub.publish_node: mqtt publish qmsk/nodes: error")
+    print("pubsub.publish: mqtt publish " .. topic .. ": error")
   end
 end
 
-function pubsub.publish_module(name, data)
-  data.Node = pubsub.node_id
+function pubsub.publish_node()
+  pubsub.publish("qmsk/nodes/" .. pubsub.node_id, {
+    ID      = pubsub.node_id,
+    Modules = pubsub.query_modules(),
+  }, {retain = true})
+end
 
-  local topic = "qmsk/" .. name .. "/" .. pubsub.node_id
-  local payload = cjson.encode(data)
-
-  if pubsub.mqtt_client:publish(topic, payload, 0, 0) then
-    print("pubsub.publish_module: mqtt publish " .. topic)
-  else
-    print("pubsub.publish_module: mqtt publish " .. topic .. ": error")
-  end
+function pubsub.publish_module(name, id, data)
+  pubsub.publish("qmsk/" .. name .. "/" .. id, data)
 end

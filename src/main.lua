@@ -78,7 +78,7 @@ function app.start()
       end)
 
       ds18b20.start(function(device, temp)
-          pubsub.publish_module("ds18b20", {
+          pubsub.publish_module("ds18b20", device, {
               Node            = pubsub.node_id,
               Device          = device,
               Temperature_16  = temp
