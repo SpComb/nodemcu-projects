@@ -1,4 +1,22 @@
 dofile("src/wifi.lua")
+if ARTNET then
+  dofile("src/artnet.lua")
+end
+if ATX_PSU then
+  dofile("src/atx_psu.lua")
+end
+if DMX then
+  dofile("src/dmx.lua")
+end
+if P9813 then
+  dofile("src/p9813.lua")
+end
+if PUBSUB then
+  dofile("src/pubsub.lua")
+end
+if DS18B20 then
+  dofile("src/ds18b20.lua")
+end
 
 app = {
     version = 0x0002,
@@ -6,26 +24,7 @@ app = {
 }
 
 function app.init()
-  print("app.init: pre heapsize=" .. node.heap())
-  if ARTNET then
-    dofile("src/artnet.lua")
-  end
-  if ATX_PSU then
-    dofile("src/atx_psu.lua")
-  end
-  if DMX then
-    dofile("src/dmx.lua")
-  end
-  if P9813 then
-    dofile("src/p9813.lua")
-  end
-  if PUBSUB then
-    dofile("src/pubsub.lua")
-  end
-  if DS18B20 then
-    dofile("src/ds18b20.lua")
-  end
-  print("app.init: post heapsize=" .. node.heap())
+  print("app.init: heapsize=" .. node.heap())
 end
 
 function app.start()
