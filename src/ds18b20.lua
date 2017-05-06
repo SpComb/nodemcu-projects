@@ -205,17 +205,23 @@ function ds18b20.read(addr)
   end
 
   local config_resolution = bit.band(config, DS18B20_CONFIG_RESOLUTION_MASK)
-  local temp_c = bit.arshift(temp, 4)
-  local temp_d = bit.band(temp, 0xF)
+  local resolution_bits = 1 + bit.rshift(config_resolution, 5) -- 1..4 bits
+  local temp_integer = bit.arshift(temp, 4)
+  local temp_fractional = bit.rshift(bit.band(temp, 0xF), 4 - resolution_bits)
+  local temp_radix = bit.lshift(1, resolution_bits)
 
-  print("ds18b20.read: " .. string.format("config={res=0x%x} temp=%d (%d + %d/16 C) alarm={high=%d, low=%d}",
+  print("ds18b20.read: " .. string.format("config={res=0x%x} temp=%d (%d + %d/%d C) alarm={high=%d, low=%d}",
     config_resolution,
     temp,
-    temp_c, temp_d,
+    temp_integer, temp_fractional, temp_radix,
     alarm_high, alarm_low
   ))
 
-  return temp
+  return {
+    integer = temp_integer,
+    fractional = temp_fractional,
+    radix = temp_radix,
+  }
 end
 
 -- Write configuration for device at address

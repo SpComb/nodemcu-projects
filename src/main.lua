@@ -80,7 +80,7 @@ function app.start()
           pubsub.publish_module("ds18b20", device, {
               Node            = pubsub.node_id,
               Device          = device,
-              Temperature_16  = temp
+              Temperature     = temp
           })
       end)
     end
