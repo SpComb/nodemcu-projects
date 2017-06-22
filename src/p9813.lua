@@ -2,6 +2,7 @@
 p9813 = {
     spi     = 1,
     count   = 1,
+    layout  = "BGR",
 
     START   = string.char(0x00, 0x00, 0x00, 0x00),
     STOP    = string.char(0x00, 0x00, 0x00, 0x00)
@@ -20,14 +21,44 @@ end
 
 -- Return 4-byte frame for 8-big RGB
 function p9813.frame(r, g, b)
+  local c1, c2, c3
+
+  if p9813.layout == "RGB" then
+    c1 = r
+    c2 = g
+    c3 = b
+  elseif p9813.layout == "RBG" then
+    c1 = r
+    c2 = b
+    c3 = g
+  elseif p9813.layout == "GBR" then
+    c1 = g
+    c2 = b
+    c3 = r
+  elseif p9813.layout == "GRB" then
+    c1 = g
+    c2 = r
+    c3 = b
+  elseif p9813.layout == "BRG" then
+    c1 = b
+    c2 = r
+    c3 = g
+  elseif p9813.layout == "BGR" then
+    c1 = b
+    c2 = g
+    c3 = r
+  else
+    error("invalid p9813.layout=" .. p9813.layout)
+  end
+
   -- 1 1 ~b7 ~b6 ~g7 ~g6 ~r7 ~r6
   local a = bit.bor(0xC0,
-      bit.rshift(bit.band(0xC0, bit.bnot(b)), 2),
-      bit.rshift(bit.band(0xC0, bit.bnot(g)), 4),
-      bit.rshift(bit.band(0xC0, bit.bnot(r)), 6)
+      bit.rshift(bit.band(0xC0, bit.bnot(c1)), 2),
+      bit.rshift(bit.band(0xC0, bit.bnot(c2)), 4),
+      bit.rshift(bit.band(0xC0, bit.bnot(c3)), 6)
   )
 
-  return string.char(a, b, g, r)
+  return string.char(a, c1, c2, c3)
 end
 
 function p9813.send_all(count, r, g, b)
