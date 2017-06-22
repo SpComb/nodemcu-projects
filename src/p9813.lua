@@ -15,7 +15,7 @@ end
 
 -- Write START .. FRAMES STOP
 function p9813.send(frames)
-    return spi.send(1, p9813.START .. frames .. p9813.STOP)
+    return spi.send(p9813.spi, p9813.START .. frames .. p9813.STOP)
 end
 
 -- Return 4-byte frame for 8-big RGB
