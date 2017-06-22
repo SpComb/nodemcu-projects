@@ -51,7 +51,9 @@ function app.start()
 
   if P9813 then
     p9813.spi = P9813_SPI
-    p9813.init()
+    p9813.init({
+      layout  = P9813_LAYOUT,
+    })
 
     if ARTNET and P9813_ARTNET_ADDR then
       artnet.patch_output(P9813_ARTNET_ADDR, p9813, "P9813")

@@ -8,7 +8,8 @@ p9813 = {
     STOP    = string.char(0x00, 0x00, 0x00, 0x00)
 }
 
-function p9813.init()
+function p9813.init(options)
+    p9813.layout = options.layout or "BGR"
     p9813.anim_index = 0
     p9813.anim_offset = 0
     p9813.anim_step = 8
