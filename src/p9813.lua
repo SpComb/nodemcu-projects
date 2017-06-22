@@ -9,7 +9,9 @@ p9813 = {
 }
 
 function p9813.init()
-    p9813.anim = 0
+    p9813.anim_index = 0
+    p9813.anim_offset = 0
+    p9813.anim_step = 8
 
     spi.setup(p9813.spi, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 8);
 end
@@ -80,11 +82,45 @@ function p9813.artnet_dmx(data)
 end
 
 function p9813.tick()
-   p9813.anim = p9813.anim + 1
+   p9813.anim_offset = p9813.anim_offset + p9813.anim_step
 
-   local v = p9813.anim % 255
+   if p9813.anim_offset > 255 then
+     p9813.anim_offset = 0
+     p9813.anim_index = p9813.anim_index + 1
+   end
 
-   p9813.send_all(p9813.count, v, v, v)
+   if p9813.anim_index >= p9813.count * 3 then
+     p9813.anim_index = 0
+   end
+
+   local frames = {}
+
+   for i = 1, p9813.count do
+     local anim_chan = p9813.anim_index % 3
+
+     local r = 0
+     local g = 0
+     local b = 0
+
+     if p9813.anim_index / 3 == i - 1 then
+
+       if anim_chan == 0 then
+         r = p9813.anim_offset
+
+       elseif anim_chan == 1 then
+         g = p9813.anim_offset
+
+       elseif anim_chan == 2 then
+         b = p9813.anim_offset
+       end
+
+       print("p9813.tick: index=" .. p9813.anim_index .. " i=" .. i .. " r=" .. r .. " g=" .. g .. " b=" .. b)
+     end
+
+     table.insert(frames, p9813.frame(r, g, b))
+   end
+
+   p9813.send(table.concat(frames))
 end
 
 function p9813.test()
