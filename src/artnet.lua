@@ -178,7 +178,7 @@ function artnet.on_receive(sock, buf, port, ip)
 
         print("artnet:recv " .. ip .. ":" .. port .. ": poll flags=" .. flags .. " priority=" .. priority)
 
-        artnet.recv_poll(port, ip, flags, priority)
+        artnet.send_poll_reply(port, ip)
 
     elseif opcode == 0x5000 then
         seq, phy, universe, length, offset = struct.unpack("BB <H >H", buf, offset)
@@ -189,10 +189,6 @@ function artnet.on_receive(sock, buf, port, ip)
     else
         print("artnet:recv " .. ip .. ":" .. port .. ": unkonwn opcode=" .. opcode .. " version=" .. version)
     end
-end
-
-function artnet.recv_poll(port, ip, flags, priority)
-  artnet.send_poll_reply(port, ip)
 end
 
 function artnet.recv_dmx(port, ip, universe, sequence, data)
