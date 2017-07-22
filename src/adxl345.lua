@@ -5,6 +5,9 @@ adxl345 = {
   i2c_addr  = 0x53, -- SDO pulled to ground
 
   devid     = 0xE5,
+  offset_x  = 48,
+  offset_y  = -6,
+  offset_z  = 0,
 }
 
 function adxl345.init()
@@ -50,8 +53,12 @@ function adxl345.write_u8(reg, val)
   return adxl345.write_struct(reg, "B", val)
 end
 
+function adxl345.set_offset(x, y, z)
+  adxl345.write_struct(0x1E, "<bbb", x, y, z)
+end
+
 function adxl345.read_xyz()
-  local x, y, z = adxl345.read_struct(0x32, "hhh")
+  local x, y, z = adxl345.read_struct(0x32, "<hhh")
 
   return x, y, z
 end
