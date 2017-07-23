@@ -56,13 +56,6 @@ ADXL345_INACT_CTL_X  = 0x04
 ADXL345_INACT_CTL_Y  = 0x02
 ADXL345_INACT_CTL_Z  = 0x01
 
-ADXL345_POWER_CTL_FLAGS_MASK  = 0x3C
-ADXL345_POWER_CTL_WAKEUP_MASK = 0x02
-ADXL345_POWER_CTL_LINK        = 0x20
-ADXL345_POWER_CTL_AUTO_SLEEP  = 0x10
-ADXL345_POWER_CTL_MEASURE     = 0x08
-ADXL345_POWER_CTL_SLEEP       = 0x04
-
 ADXL345_INT_DATA_READY = 0x80
 ADXL345_INT_SINGLE_TAP = 0x40
 ADXL345_INT_DOUBLE_TAP = 0x20
@@ -123,12 +116,6 @@ function app.adxl345.setup(config)
   end
 end
 
-function app.adxl345.power_ctl(flags)
-  adxl345.set(0x2D, bit.bor(
-    bit.band(ADXL345_POWER_CTL_FLAGS_MASK, flags)
-  ))
-end
-
 function app.adxl345.int_disable()
   adxl345.set(0x2E, 0)
 end
@@ -176,11 +163,7 @@ function app.adxl345.start(handlers)
     end)
   end
 
-  app.adxl345.power_ctl(ADXL345_POWER_CTL_MEASURE)
-end
-
-function app.adxl345.read_xyz()
-  return adxl345.read()
+  adxl345.set_power_ctl(adxl345.POWER_CTL_MEASURE)
 end
 
 -- Return { {x, y, z} }

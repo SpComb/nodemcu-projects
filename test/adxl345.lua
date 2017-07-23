@@ -83,7 +83,7 @@ end
 app.adxl345.init()
 app.adxl345.setup(adxl345_config)
 app.adxl345.int_enable(ADXL345_INT_ACTIVITY)
-app.adxl345.power_ctl(ADXL345_POWER_CTL_MEASURE)
+adxl345.set_power_ctl(adxl345.POWER_CTL_MEASURE)
 app.adxl345.print_config()
 
 tmr.alarm(0, 1000, tmr.ALARM_AUTO, function(timer)
