@@ -75,14 +75,14 @@ function adxl345_trigger(event)
   end
 
   -- clear interrupt
-  local int_status = app.adxl345.read_int()
+  local int_status = adxl345.read_interrupts()
 
   print(string.format("ADXL345: INT %02x", int_status))
 end
 
 app.adxl345.init()
 app.adxl345.setup(adxl345_config)
-app.adxl345.int_enable(ADXL345_INT_ACTIVITY)
+adxl345.set_int_enable(adxl345.INT_ACTIVITY)
 adxl345.set_power_ctl(adxl345.POWER_CTL_MEASURE)
 app.adxl345.print_config()
 

@@ -56,15 +56,6 @@ ADXL345_INACT_CTL_X  = 0x04
 ADXL345_INACT_CTL_Y  = 0x02
 ADXL345_INACT_CTL_Z  = 0x01
 
-ADXL345_INT_DATA_READY = 0x80
-ADXL345_INT_SINGLE_TAP = 0x40
-ADXL345_INT_DOUBLE_TAP = 0x20
-ADXL345_INT_ACTIVITY   = 0x10
-ADXL345_INT_INACTIVITY = 0x08
-ADXL345_INT_FREE_FALL  = 0x04
-ADXL345_INT_WATERMARK  = 0x02
-ADXL345_INT_OVERRUN    = 0x01
-
 ADXL345_DATA_FORMAT_SELF_TEST  = 0x80
 ADXL345_DATA_FORMAT_SPI        = 0x40
 ADXL345_DATA_FORMAT_INT_INVERT = 0x20
@@ -116,15 +107,6 @@ function app.adxl345.setup(config)
   end
 end
 
-function app.adxl345.int_disable()
-  adxl345.set(0x2E, 0)
-end
-function app.adxl345.int_enable(mask)
-  adxl345.set(0x2E, mask)
-end
-function app.adxl345.read_int() -- clears interrupt
-  return adxl345.get(0x30)
-end
 function app.adxl345.on_int1(handler)
   gpio.trig(app.adxl345.int1_pin, "up", handler)
 end
@@ -150,14 +132,14 @@ function app.adxl345.print_config()
 end
 
 function app.adxl345.start(handlers)
-  app.adxl345.set_int_map(0) -- All INT1
+  adxl345.set(ADXL345_REG_INT_MAP, 0) -- All INT1
 
   if handlers.activity then
-    app.adxl345.int_enable(ADXL345_INT_ACTIVITY)
+    adxl345.set_int_enable(adxl345.INT_ACTIVITY)
     app.adxl345.on_int1(function(level, when)
-      local int_status = adxl345.read_int()
+      local int_status = adxl345.read_interrupts()
 
-      if bit.band(int_status, ADXL345_INT_ACTIVITY) ~= 0 then
+      if bit.band(int_status, adxl345.INT_ACTIVITY) ~= 0 then
         handlers.activity()
       end
     end)
