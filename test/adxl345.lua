@@ -1,34 +1,27 @@
+adxl345_config = {
+  ofs_x  = 48, -- 1/64g
+  ofs_y  = -6, -- 1/64g
+  ofs_z  = 0,  -- 1/64g
+
+  thresh_act    = 10, -- 1/16g
+  thresh_inact  = 10, -- 1/16g
+  time_inact    = 2,
+}
 adxl345.init()
 
-adxl345.set_offset(adxl345.offset_x, adxl345.offset_y, adxl345.offset_z)
-adxl345.write_u8(0x24, adxl345.threshold_active)   -- THRESH_ACT @ 1g/16
-adxl345.write_u8(0x25, adxl345.threshold_inactive) -- THRESH_ACT @ 1g/16
-adxl345.write_u8(0x26, adxl345.time_inactive)      -- THRESH_ACT @ 1s/1
-adxl345.write_u8(0x27, 0xE0 + 0x0E) -- ACT_INACT_CTL ACT=dc-xy INACT=dc-xy
-adxl345.write_u8(0x31, 0x08 + 0x03) -- DATA_FORMAT FULL_RES=1 Range=16g
-adxl345.write_u8(0x2F, 0x00) -- INT_MAP Activity=INT1 Inactivity=INT1
-adxl345.write_u8(0x38, 0x80 + 16) -- FIFO_CTL FIFO_MODE=Stream Trigger=0 Samples=16
+adxl345.set_ofs(adxl345_config.ofs_x, adxl345_config.ofs_y, adxl345_config.ofs_z)
+adxl345.set_thresh_act(adxl345_config.thresh_act)
+adxl345.set_thresh_inact(adxl345_config.thresh_inact)
+adxl345.set_time_inact(adxl345_config.time_inact)
 
-print(string.format("ADXL345 DEVID         %02x", adxl345.read_u8(0x00)))
-print(string.format("ADXL345 OFFSET        %+3d %+3d %+3d", adxl345.read_struct(0x1E, "<bbb")))
-print(string.format("ADXL345 THRESH_ACT    %02x", adxl345.read_u8(0x24)))
-print(string.format("ADXL345 THRESH_INACT  %02x", adxl345.read_u8(0x25)))
-print(string.format("ADXL345 TIME_INACT    %02x", adxl345.read_u8(0x26)))
-print(string.format("ADXL345 ACT_INACT_CTL %02x", adxl345.read_u8(0x27)))
-print(string.format("ADXL345 BW_RATE       %02x", adxl345.read_u8(0x2C)))
-print(string.format("ADXL345 POWER_CTL     %02x", adxl345.read_u8(0x2D)))
-print(string.format("ADXL345 INT_ENABLE    %02x", adxl345.read_u8(0x2E)))
-print(string.format("ADXL345 INT_MAP       %02x", adxl345.read_u8(0x2F)))
-print(string.format("ADXL345 INT_SOURCE    %02x", adxl345.read_u8(0x30)))
-print(string.format("ADXL345 DATA_FORMAT   %02x", adxl345.read_u8(0x31)))
-print(string.format("ADXL345 FIFO_CTL      %02x", adxl345.read_u8(0x38)))
-print(string.format("ADXL345 FIFO_STATUS   %02x", adxl345.read_u8(0x39)))
+adxl345.set_act_inact_ctl(ADXL345_ACT_CTL_AC + ADXL345_ACT_CTL_X + ADXL345_ACT_CTL_Y)
+adxl345.set_int_map(0)
+adxl345.set_data_format(ADXL345_DATA_FORMAT_FULL_RES + ADXL345_DATA_FORMAT_RANGE_16G)
+adxl345.set_fifo_ctl(ADXL345_FIFO_MODE_STREAM, ADXL345_FIFO_TRIGGER_INT1, 16)
+adxl345.int_enable(ADXL345_INT_ACTIVITY)
+adxl345.power_ctl(ADXL345_POWER_CTL_MEASURE)
 
-adxl345.write_u8(0x2D, 0x08) -- POWER_CTL measure=1
-adxl345.write_u8(0x2E, 0x10) -- INT_ENABLE Activity !Inactivity
-
-print(string.format("ADXL345 POWER_CTL     %02x", adxl345.read_u8(0x2D)))
-print(string.format("ADXL345 INT_ENABLE    %02x", adxl345.read_u8(0x2E)))
+adxl345.print_config()
 
 -- Print state, show absolute values
 function adxl345_print()
@@ -77,17 +70,18 @@ function adxl345_trigger(event)
     local dz0 = z - z0
     local dz1 = z - z1
 
-    if dx1 > adxl345.threshold_active * 16 then
+    -- XXX: 1/256 <=> 1/16
+    if dx1 > adxl345_config.thresh_act * 16 then
       print(string.format("ADXL345 @ %2d: +X %+6d          (d0 %+6d, d1 = %+6d)", i, x, dx0, dx1))
-    elseif dx1 < -adxl345.threshold_active * 16 then
+    elseif dx1 < -adxl345_config.thresh_act * 16 then
       print(string.format("ADXL345 @ %2d: -X %+6d          (d0 %+6d, d1 = %+6d)", i, x, dx0, dx1))
     else
       print(string.format("ADXL345 @ %2d:  X %+6d          (d0 %+6d, d1 = %+6d)", i, x, dx0, dx1))
     end
 
-    if dy1 > adxl345.threshold_active * 16 then
+    if dy1 > adxl345_config.thresh_act * 16 then
       print(string.format("ADXL345 @ %2d:          +Y %+6d (d0 %+6d, d1 = %+6d)", i, y, dy0, dy1))
-    elseif dy1 < -adxl345.threshold_active * 16 then
+    elseif dy1 < -adxl345_config.thresh_act * 16 then
       print(string.format("ADXL345 @ %2d:          -Y %+6d (d0 %+6d, d1 = %+6d)", i, y, dy0, dy1))
     else
       print(string.format("ADXL345 @ %2d:           Y %+6d (d0 %+6d, d1 = %+6d)", i, y, dy0, dy1))
@@ -110,9 +104,14 @@ if false then
   end)
 end
 
-adxl345.on_int1(function(level, when)
-  adxl345_trigger("INT1")
-end)
-adxl345.on_int2(function(level, when)
-  adxl345_trigger("INT2")
-end)
+if adxl345.int1_pin then
+  print("on int1...")
+  adxl345.on_int1(function(level, when)
+    adxl345_trigger("INT1")
+  end)
+end
+if adxl345.int2_pin then
+  adxl345.on_int2(function(level, when)
+    adxl345_trigger("INT2")
+  end)
+end
