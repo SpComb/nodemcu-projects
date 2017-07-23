@@ -76,6 +76,9 @@ ADXL345_FIFO_MODE_TRIGGER = 0xC0
 ADXL345_FIFO_TRIGGER_INT1 = 0x00
 ADXL345_FIFO_TRIGGER_INT2 = 0x20
 
+ADXL345_FIFO_STATUS_TRIG         = 0x80
+ADXL345_FIFO_STATUS_ENTRIES_MASK = 0x3F -- XXX: or 0x7F?
+
 function adxl345.init(config)
   adxl345.config = config
 
@@ -157,12 +160,6 @@ end
 function adxl345.set_act_inact_ctl(flags)
   adxl345.write_u8(0x26, flags)
 end
-function adxl345.set_power_ctl(flags)
-  adxl345.write_u8(0x2D, flags)
-end
-function adxl345.set_int_enable(flags)
-  adxl345.write_u8(0x2E, flags)
-end
 function adxl345.set_int_map(flags)
   adxl345.write_u8(0x2F, flags)
 end
@@ -175,6 +172,14 @@ function adxl345.set_fifo_ctl(mode, trigger, samples)
     bit.band(ADXL345_FIFO_TRIGGER_MASK, trigger),
     bit.band(ADXL345_FIFO_SAMPLES_MASK, samples)
   ))
+end
+function adxl345.get_fifo_status()
+  local fifo_status = adxl345.read_u8(0x39)
+
+  local fifo_trigger = bit.band(fifo_status, ADXL345_FIFO_STATUS_TRIG)
+  local fifo_entries = bit.band(fifo_status, ADXL345_FIFO_STATUS_ENTRIES_MASK)
+
+  return fifo_trigger ~= 0, fifo_entries
 end
 
 function adxl345.setup(config)
@@ -217,8 +222,8 @@ end
 function adxl345.int_enable(mask)
   adxl345.write_u8(0x2E, mask)
 end
-function adxl345.read_int()
-  adxl345.read_u8(0x30)
+function adxl345.read_int() -- clears interrupt
+  return adxl345.read_u8(0x30)
 end
 function adxl345.on_int1(handler)
   gpio.trig(adxl345.int1_pin, "up", handler)

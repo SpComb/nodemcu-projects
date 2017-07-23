@@ -25,9 +25,7 @@ adxl345.print_config()
 
 -- Print state, show absolute values
 function adxl345_print()
-  local fifo_status = adxl345.read_u8(0x39)
-  local fifo_trigger = bit.band(fifo_status, 0x80) ~= 0
-  local fifo_entries = bit.band(fifo_status, 0x3f)
+  local fifo_trigger, fifo_entries = adxl345.get_fifo_status()
 
   print(string.format("ADXL345: FIFO trigger=%s entries=%d ", tostring(fifo_trigger), fifo_entries))
 
@@ -40,16 +38,14 @@ function adxl345_print()
   end
 
   -- clear interrupt
-  local int_status = adxl345.read_u8(0x30)
+  local int_status = adxl345.read_int()
 
   print(string.format("ADXL345 INT: %02x", int_status))
 end
 
 -- Trigger on changes, show deltas
 function adxl345_trigger(event)
-  local fifo_status = adxl345.read_u8(0x39)
-  local fifo_trigger = bit.band(fifo_status, 0x80) ~= 0
-  local fifo_entries = bit.band(fifo_status, 0x3f)
+  local fifo_trigger, fifo_entries = adxl345.get_fifo_status()
 
   print(string.format("ADXL345 @ %s: FIFO trigger=%s entries=%d ", event, tostring(fifo_trigger), fifo_entries))
 
@@ -93,7 +89,7 @@ function adxl345_trigger(event)
   end
 
   -- clear interrupt
-  local int_status = adxl345.read_u8(0x30)
+  local int_status = adxl345.read_int()
 
   print(string.format("ADXL345: INT %02x", int_status))
 end
