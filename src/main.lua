@@ -17,6 +17,9 @@ end
 if DS18B20 then
   dofile("src/ds18b20.lua")
 end
+if ADXL345 then
+  dofile("src/adxl345.lua")
+end
 
 app = {
     version = 0x0002,
@@ -86,6 +89,11 @@ function app.start()
           })
       end)
     end
+  end
+
+  if ADXL345 then
+    adxl345.init()
+    adxl345.config(ADXL345)
   end
 
   print("app.start: post heapsize=" .. node.heap())
