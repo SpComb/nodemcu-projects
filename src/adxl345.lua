@@ -79,9 +79,7 @@ ADXL345_FIFO_TRIGGER_INT2 = 0x20
 ADXL345_FIFO_STATUS_TRIG         = 0x80
 ADXL345_FIFO_STATUS_ENTRIES_MASK = 0x3F -- XXX: or 0x7F?
 
-function adxl345.init(config)
-  adxl345.config = config
-
+function adxl345.init()
   i2c.setup(adxl345.i2c_id, adxl345.i2c_sda, adxl345.i2c_scl, i2c.SLOW)
 
   if adxl345.int1_pin then
