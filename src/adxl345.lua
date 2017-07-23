@@ -1,4 +1,4 @@
-adxl345 = {
+app.adxl345 = {
   i2c_id    = 0,
   i2c_sda   = 12,
   i2c_scl   = 11,
@@ -24,10 +24,26 @@ adxl345 = {
     data_format   = nil,
 
     fifo_mode     = nil, -- ADXL345_FIFO_MODE_*
-    fifo_int      = nil, -- ADXL345_FIFO_INT_*
+    fifo_trigger  = nil, -- ADXL345_FIFO_TRIGGER_*
     fifo_samples  = nil, -- 0-32
   }
 }
+
+ADXL345_REG_DEVID = 0x00
+ADXL345_REG_OFSX = 0x1E
+ADXL345_REG_OFSY = 0x1F
+ADXL345_REG_OFSZ = 0x20
+ADXL345_REG_THRES_ACT = 0x24
+ADXL345_REG_THRES_INACT = 0x25
+ADXL345_REG_TIME_INACT = 0x26
+ADXL345_REG_ACT_INACT_CTL = 0x27
+ADXL345_REG_POWER_CTL = 0x2D
+ADXL345_REG_INT_ENABLE = 0x2E
+ADXL345_REG_INT_MAP = 0x2F
+ADXL345_REG_DATA_FORMAT = 0x31
+ADXL345_REG_DATA = 0x30 -- X0 X1 Y0 Y1 Z0 Z1
+ADXL345_REG_FIFO_CTL = 0x38
+ADXL345_REG_FIFO_STATUS = 0x39
 
 ADXL345_ACT_CTL_DC   = 0x00
 ADXL345_ACT_CTL_AC   = 0x80
@@ -79,100 +95,36 @@ ADXL345_FIFO_TRIGGER_INT2 = 0x20
 ADXL345_FIFO_STATUS_TRIG         = 0x80
 ADXL345_FIFO_STATUS_ENTRIES_MASK = 0x3F -- XXX: or 0x7F?
 
-function adxl345.init()
-  i2c.setup(adxl345.i2c_id, adxl345.i2c_sda, adxl345.i2c_scl, i2c.SLOW)
+function app.adxl345.init()
+  i2c.setup(app.adxl345.i2c_id, app.adxl345.i2c_sda, app.adxl345.i2c_scl, i2c.SLOW)
 
-  if adxl345.int1_pin then
-    gpio.mode(adxl345.int1_pin, gpio.INT, gpio.FLOAT)
+  adxl345.setup()
+
+  if app.adxl345.int1_pin then
+    gpio.mode(app.adxl345.int1_pin, gpio.INT, gpio.FLOAT)
   end
   if adxl345.int2_pin then
-    gpio.mode(adxl345.int2_pin, gpio.INT, gpio.FLOAT)
+    gpio.mode(app.adxl345.int2_pin, gpio.INT, gpio.FLOAT)
   end
 end
 
-function adxl345.send(...)
-  i2c.start(adxl345.i2c_id)
-  i2c.address(adxl345.i2c_id, adxl345.i2c_addr, i2c.TRANSMITTER)
-  i2c.write(adxl345.i2c_id, ...)
-  i2c.stop(adxl345.i2c_id)
-end
-
-function adxl345.recv(len)
-  local data
-
-  i2c.start(adxl345.i2c_id)
-  i2c.address(adxl345.i2c_id, adxl345.i2c_addr, i2c.RECEIVER)
-  data = i2c.read(adxl345.i2c_id, len)
-  i2c.stop(adxl345.i2c_id)
-
-  return data
-end
-
-function adxl345.read_struct(reg, fmt)
-  local len = struct.size(fmt)
-
-  adxl345.send(reg)
-
-  return struct.unpack(fmt, adxl345.recv(len))
-end
-
-function adxl345.write_struct(reg, fmt, ...)
-  adxl345.send(reg, struct.pack(fmt, ...))
-end
-
-function adxl345.read_u8(reg)
-  local val, _ = adxl345.read_struct(reg, "B")
-
-  return val
-end
-function adxl345.write_u8(reg, val)
-  return adxl345.write_struct(reg, "B", val)
-end
-
-function adxl345.set_ofs(x, y, z)
-  adxl345.write_struct(0x1E, "<bbb", x, y, z)
-end
-function adxl345.get_ofs()
-  local x, y, z = adxl345.read_struct(0x1E, "<bbb")
+function app.adxl345.get_ofs()
+  local x = adxl345.get(ADXL345_REG_OFSX)
+  local y = adxl345.get(ADXL345_REG_OFSY)
+  local z = adxl345.get(ADXL345_REG_OFSZ)
 
   return x, y, z -- 1/64
 end
 
-function adxl345.get_thresh_act()
-  return adxl345.read_u8(0x24) -- 1/16
-end
-function adxl345.set_thresh_act(g16)
-  adxl345.write_u8(0x24, g16)
-end
-
-function adxl345.get_thresh_inact()
-  return adxl345.read_u8(0x25) -- 1/16
-end
-function adxl345.set_thresh_inact(g16)
-  adxl345.write_u8(0x25, g16)
-end
-
-function adxl345.set_time_inact(s)
-  adxl345.write_u8(0x26, s)
-end
-function adxl345.set_act_inact_ctl(flags)
-  adxl345.write_u8(0x26, flags)
-end
-function adxl345.set_int_map(flags)
-  adxl345.write_u8(0x2F, flags)
-end
-function adxl345.set_data_format(flags)
-  adxl345.write_u8(0x31, flags)
-end
-function adxl345.set_fifo_ctl(mode, trigger, samples)
-  adxl345.write_u8(0x38, bit.bor(
+function app.adxl345.set_fifo_ctl(mode, trigger, samples)
+  adxl345.set(ADXL345_REG_FIFO_CTL, bit.bor(
     bit.band(ADXL345_FIFO_MODE_MASK, mode),
     bit.band(ADXL345_FIFO_TRIGGER_MASK, trigger),
     bit.band(ADXL345_FIFO_SAMPLES_MASK, samples)
   ))
 end
-function adxl345.get_fifo_status()
-  local fifo_status = adxl345.read_u8(0x39)
+function app.adxl345.get_fifo_status()
+  local fifo_status = adxl345.get(ADXL345_REG_FIFO_STATUS)
 
   local fifo_trigger = bit.band(fifo_status, ADXL345_FIFO_STATUS_TRIG)
   local fifo_entries = bit.band(fifo_status, ADXL345_FIFO_STATUS_ENTRIES_MASK)
@@ -180,79 +132,79 @@ function adxl345.get_fifo_status()
   return fifo_trigger ~= 0, fifo_entries
 end
 
-function adxl345.setup(config)
+function app.adxl345.setup(config)
   if config.ofs_x and config.ofs_y and config.ofs_z then
-    adxl345.set_ofs(config.ofs_x, config.ofs_y, config.ofs_z)
+    adxl345.set_offset(config.ofs_x, config.ofs_y, config.ofs_z)
   end
 
   if config.thresh_act then
-    adxl345.set_thresh_act(config.thresh_act)
+    adxl345.set(ADXL345_REG_THRES_ACT, config.thresh_act)
   end
   if config.thresh_inact then
-    adxl345.set_thresh_inact(config.thresh_inact)
+    adxl345.set(ADXL345_REG_THRES_INACT, config.thresh_inact)
   end
   if config.time_inact then
-    adxl345.set_time_inact(config.time_inact)
+    adxl345.set(ADXL345_REG_TIME_INACT, config.time_inact)
   end
   if config.act_inact_ctl then
-    adxl345.set_act_inact_ctl(config.act_inact_ctl)
+    adxl345.set(ADXL345_REG_ACT_INACT_CTL, config.act_inact_ctl)
   end
   if config.int_map then
-    adxl345.set_int_map(config.int_map)
+    adxl345.set(ADXL345_REG_INT_MAP, config.int_map)
   end
   if config.data_format then
-    adxl345.set_data_format(config.data_format)
+    adxl345.set(ADXL345_REG_DATA_FORMAT, config.data_format)
   end
-  if config.fifo_mode and config.fifo_int and config.fifo_samples then
-    adxl345.set_fifo_ctl(config.fifo_mode, config.fifo_int, config.fifo_samples)
+  if config.fifo_mode and config.fifo_trigger and config.fifo_samples then
+    app.adxl345.set_fifo_ctl(config.fifo_mode, config.fifo_trigger, config.fifo_samples)
   end
 end
 
-function adxl345.power_ctl(flags)
-  adxl345.write_u8(0x2D, bit.bor(
+function app.adxl345.power_ctl(flags)
+  adxl345.set(0x2D, bit.bor(
     bit.band(ADXL345_POWER_CTL_FLAGS_MASK, flags)
   ))
 end
 
-function adxl345.int_disable()
-  adxl345.write_u8(0x2E, 0)
+function app.adxl345.int_disable()
+  adxl345.set(0x2E, 0)
 end
-function adxl345.int_enable(mask)
-  adxl345.write_u8(0x2E, mask)
+function app.adxl345.int_enable(mask)
+  adxl345.set(0x2E, mask)
 end
-function adxl345.read_int() -- clears interrupt
-  return adxl345.read_u8(0x30)
+function app.adxl345.read_int() -- clears interrupt
+  return adxl345.get(0x30)
 end
-function adxl345.on_int1(handler)
-  gpio.trig(adxl345.int1_pin, "up", handler)
+function app.adxl345.on_int1(handler)
+  gpio.trig(app.adxl345.int1_pin, "up", handler)
 end
-function adxl345.on_int2(handler)
-  gpio.trig(adxl345.int2_pin, "up", handler)
-end
-
-function adxl345.print_config()
-  print(string.format("ADXL345 DEVID         %02x", adxl345.read_u8(0x00)))
-  print(string.format("ADXL345 OFFSET        %+3d %+3d %+3d", adxl345.get_ofs()))
-  print(string.format("ADXL345 THRESH_ACT    %02x", adxl345.get_thresh_act()))
-  print(string.format("ADXL345 THRESH_INACT  %02x", adxl345.get_thresh_inact()))
-  print(string.format("ADXL345 TIME_INACT    %02x", adxl345.read_u8(0x26)))
-  print(string.format("ADXL345 ACT_INACT_CTL %02x", adxl345.read_u8(0x27)))
-  print(string.format("ADXL345 BW_RATE       %02x", adxl345.read_u8(0x2C)))
-  print(string.format("ADXL345 POWER_CTL     %02x", adxl345.read_u8(0x2D)))
-  print(string.format("ADXL345 INT_ENABLE    %02x", adxl345.read_u8(0x2E)))
-  print(string.format("ADXL345 INT_MAP       %02x", adxl345.read_u8(0x2F)))
-  print(string.format("ADXL345 INT_SOURCE    %02x", adxl345.read_u8(0x30)))
-  print(string.format("ADXL345 DATA_FORMAT   %02x", adxl345.read_u8(0x31)))
-  print(string.format("ADXL345 FIFO_CTL      %02x", adxl345.read_u8(0x38)))
-  print(string.format("ADXL345 FIFO_STATUS   %02x", adxl345.read_u8(0x39)))
+function app.adxl345.on_int2(handler)
+  gpio.trig(app.adxl345.int2_pin, "up", handler)
 end
 
-function adxl345.start(handlers)
-  adxl345.set_int_map(0) -- All INT1
+function app.adxl345.print_config()
+  print(string.format("ADXL345 DEVID         %02x", adxl345.get(0x00)))
+  print(string.format("ADXL345 OFFSET        %+3d %+3d %+3d", app.adxl345.get_ofs()))
+  print(string.format("ADXL345 THRESH_ACT    %02x", adxl345.get(0x24)))
+  print(string.format("ADXL345 THRESH_INACT  %02x", adxl345.get(0x25)))
+  print(string.format("ADXL345 TIME_INACT    %02x", adxl345.get(0x26)))
+  print(string.format("ADXL345 ACT_INACT_CTL %02x", adxl345.get(0x27)))
+  print(string.format("ADXL345 BW_RATE       %02x", adxl345.get(0x2C)))
+  print(string.format("ADXL345 POWER_CTL     %02x", adxl345.get(0x2D)))
+  print(string.format("ADXL345 INT_ENABLE    %02x", adxl345.get(0x2E)))
+  print(string.format("ADXL345 INT_MAP       %02x", adxl345.get(0x2F)))
+  print(string.format("ADXL345 INT_SOURCE    %02x", adxl345.get(0x30)))
+  print(string.format("ADXL345 DATA_FORMAT   %02x", adxl345.get(0x31)))
+  print(string.format("ADXL345 FIFO_CTL      %02x", adxl345.get(0x38)))
+  print(string.format("ADXL345 FIFO_STATUS   %02x", adxl345.get(0x39)))
+end
+
+function app.adxl345.start(handlers)
+  app.adxl345.set_int_map(0) -- All INT1
 
   if handlers.activity then
-    adxl345.int_enable(ADXL345_INT_ACTIVITY)
-    adxl345.on_int1(function(level, when)
+    app.adxl345.int_enable(ADXL345_INT_ACTIVITY)
+    app.adxl345.on_int1(function(level, when)
       local int_status = adxl345.read_int()
 
       if bit.band(int_status, ADXL345_INT_ACTIVITY) ~= 0 then
@@ -261,24 +213,22 @@ function adxl345.start(handlers)
     end)
   end
 
-  adxl345.power_ctl(ADXL345_POWER_CTL_MEASURE)
+  app.adxl345.power_ctl(ADXL345_POWER_CTL_MEASURE)
 end
 
-function adxl345.read_xyz()
-  local x, y, z = adxl345.read_struct(0x32, "<hhh")
-
-  return x, y, z
+function app.adxl345.read_xyz()
+  return adxl345.read()
 end
 
 -- Return { {x, y, z} }
-function adxl345.read_fifo()
+function app.adxl345.read_fifo()
   local entries = {}
-  local fifo_trigger, fifo_entries = adxl345.get_fifo_status()
+  local fifo_trigger, fifo_entries = app.adxl345.get_fifo_status()
 
   print(string.format("ADXL345: FIFO trigger=%s entries=%d ", tostring(fifo_trigger), fifo_entries))
 
   for i = 1, fifo_entries do
-    local x, y, z = adxl345.read_xyz()
+    local x, y, z = adxl345.read()
 
     table.insert(entries, {x = x, y = y, z = z})
   end

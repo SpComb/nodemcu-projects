@@ -1,3 +1,8 @@
+app = {
+    version = 0x0002,
+    running = false,
+}
+
 dofile("src/wifi.lua")
 if ARTNET then
   dofile("src/artnet.lua")
@@ -20,11 +25,6 @@ end
 if ADXL345 then
   dofile("src/adxl345.lua")
 end
-
-app = {
-    version = 0x0002,
-    running = false,
-}
 
 function app.init()
   print("app.init: heapsize=" .. node.heap())
