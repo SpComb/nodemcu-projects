@@ -82,19 +82,6 @@ ADXL345_DATA_FORMAT_RANGE_4G   = 0x01
 ADXL345_DATA_FORMAT_RANGE_8G   = 0x02
 ADXL345_DATA_FORMAT_RANGE_16G  = 0x03
 
-ADXL345_FIFO_MODE_MASK    = 0xC0
-ADXL345_FIFO_TRIGGER_MASK = 0x20
-ADXL345_FIFO_SAMPLES_MASK = 0x1F
-ADXL345_FIFO_MODE_BYPASS  = 0x00
-ADXL345_FIFO_MODE_FIFO    = 0x40
-ADXL345_FIFO_MODE_STREAM  = 0x80
-ADXL345_FIFO_MODE_TRIGGER = 0xC0
-ADXL345_FIFO_TRIGGER_INT1 = 0x00
-ADXL345_FIFO_TRIGGER_INT2 = 0x20
-
-ADXL345_FIFO_STATUS_TRIG         = 0x80
-ADXL345_FIFO_STATUS_ENTRIES_MASK = 0x3F -- XXX: or 0x7F?
-
 function app.adxl345.init()
   i2c.setup(app.adxl345.i2c_id, app.adxl345.i2c_sda, app.adxl345.i2c_scl, i2c.SLOW)
 
@@ -106,30 +93,6 @@ function app.adxl345.init()
   if adxl345.int2_pin then
     gpio.mode(app.adxl345.int2_pin, gpio.INT, gpio.FLOAT)
   end
-end
-
-function app.adxl345.get_ofs()
-  local x = adxl345.get(ADXL345_REG_OFSX)
-  local y = adxl345.get(ADXL345_REG_OFSY)
-  local z = adxl345.get(ADXL345_REG_OFSZ)
-
-  return x, y, z -- 1/64
-end
-
-function app.adxl345.set_fifo_ctl(mode, trigger, samples)
-  adxl345.set(ADXL345_REG_FIFO_CTL, bit.bor(
-    bit.band(ADXL345_FIFO_MODE_MASK, mode),
-    bit.band(ADXL345_FIFO_TRIGGER_MASK, trigger),
-    bit.band(ADXL345_FIFO_SAMPLES_MASK, samples)
-  ))
-end
-function app.adxl345.get_fifo_status()
-  local fifo_status = adxl345.get(ADXL345_REG_FIFO_STATUS)
-
-  local fifo_trigger = bit.band(fifo_status, ADXL345_FIFO_STATUS_TRIG)
-  local fifo_entries = bit.band(fifo_status, ADXL345_FIFO_STATUS_ENTRIES_MASK)
-
-  return fifo_trigger ~= 0, fifo_entries
 end
 
 function app.adxl345.setup(config)
@@ -156,7 +119,7 @@ function app.adxl345.setup(config)
     adxl345.set(ADXL345_REG_DATA_FORMAT, config.data_format)
   end
   if config.fifo_mode and config.fifo_trigger and config.fifo_samples then
-    app.adxl345.set_fifo_ctl(config.fifo_mode, config.fifo_trigger, config.fifo_samples)
+    adxl345.set_fifo_ctl(config.fifo_mode, config.fifo_trigger, config.fifo_samples)
   end
 end
 
@@ -184,7 +147,7 @@ end
 
 function app.adxl345.print_config()
   print(string.format("ADXL345 DEVID         %02x", adxl345.get(0x00)))
-  print(string.format("ADXL345 OFFSET        %+3d %+3d %+3d", app.adxl345.get_ofs()))
+  print(string.format("ADXL345 OFFSET        %+3d %+3d %+3d", adxl345.get_offset()))
   print(string.format("ADXL345 THRESH_ACT    %02x", adxl345.get(0x24)))
   print(string.format("ADXL345 THRESH_INACT  %02x", adxl345.get(0x25)))
   print(string.format("ADXL345 TIME_INACT    %02x", adxl345.get(0x26)))
@@ -223,7 +186,7 @@ end
 -- Return { {x, y, z} }
 function app.adxl345.read_fifo()
   local entries = {}
-  local fifo_trigger, fifo_entries = app.adxl345.get_fifo_status()
+  local fifo_trigger, fifo_entries = adxl345.get_fifo_status()
 
   print(string.format("ADXL345: FIFO trigger=%s entries=%d ", tostring(fifo_trigger), fifo_entries))
 
