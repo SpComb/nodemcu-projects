@@ -18,92 +18,25 @@ app.adxl345 = {
     thresh_inact  = nil, -- 1/16g
     time_inact    = nil, -- seconds
 
-    act_inact_ctl = nil, -- ADXL345_ACT/INACT_CTL_*
-    int_enable    = nil, -- ADXL345_INT_*
-    int_map       = nil, -- ADXL345_INT_* -> INT2, otherwise INT1
+    act_inact_ctl = nil, -- adxl345.ACT/INACT_CTL_*
+    int_enable    = nil, -- adxl345.INT_*
+    int_map       = nil, -- adxl345.INT_* -> INT2, otherwise INT1
     data_format   = nil,
 
-    fifo_mode     = nil, -- ADXL345_FIFO_MODE_*
-    fifo_trigger  = nil, -- ADXL345_FIFO_TRIGGER_*
+    fifo_mode     = nil, -- adxl345.FIFO_MODE_*
+    fifo_trigger  = nil, -- adxl345.FIFO_TRIGGER_*
     fifo_samples  = nil, -- 0-32
   }
 }
 
-ADXL345_REG_DEVID = 0x00
-ADXL345_REG_OFSX = 0x1E
-ADXL345_REG_OFSY = 0x1F
-ADXL345_REG_OFSZ = 0x20
-ADXL345_REG_THRES_ACT = 0x24
-ADXL345_REG_THRES_INACT = 0x25
-ADXL345_REG_TIME_INACT = 0x26
-ADXL345_REG_ACT_INACT_CTL = 0x27
-ADXL345_REG_POWER_CTL = 0x2D
-ADXL345_REG_INT_ENABLE = 0x2E
-ADXL345_REG_INT_MAP = 0x2F
-ADXL345_REG_DATA_FORMAT = 0x31
-ADXL345_REG_DATA = 0x30 -- X0 X1 Y0 Y1 Z0 Z1
-ADXL345_REG_FIFO_CTL = 0x38
-ADXL345_REG_FIFO_STATUS = 0x39
-
-ADXL345_ACT_CTL_DC   = 0x00
-ADXL345_ACT_CTL_AC   = 0x80
-ADXL345_ACT_CTL_X    = 0x40
-ADXL345_ACT_CTL_Y    = 0x20
-ADXL345_ACT_CTL_Z    = 0x10
-ADXL345_INACT_CTL_DC = 0x00
-ADXL345_INACT_CTL_AC = 0x08
-ADXL345_INACT_CTL_X  = 0x04
-ADXL345_INACT_CTL_Y  = 0x02
-ADXL345_INACT_CTL_Z  = 0x01
-
-ADXL345_DATA_FORMAT_SELF_TEST  = 0x80
-ADXL345_DATA_FORMAT_SPI        = 0x40
-ADXL345_DATA_FORMAT_INT_INVERT = 0x20
-ADXL345_DATA_FORMAT_FULL_RES   = 0x08
-ADXL345_DATA_FORMAT_JUSTIFY    = 0x04
-ADXL345_DATA_FORMAT_RANGE_2G   = 0x00
-ADXL345_DATA_FORMAT_RANGE_4G   = 0x01
-ADXL345_DATA_FORMAT_RANGE_8G   = 0x02
-ADXL345_DATA_FORMAT_RANGE_16G  = 0x03
-
 function app.adxl345.init()
   i2c.setup(app.adxl345.i2c_id, app.adxl345.i2c_sda, app.adxl345.i2c_scl, i2c.SLOW)
-
-  adxl345.setup()
 
   if app.adxl345.int1_pin then
     gpio.mode(app.adxl345.int1_pin, gpio.INT, gpio.FLOAT)
   end
   if adxl345.int2_pin then
     gpio.mode(app.adxl345.int2_pin, gpio.INT, gpio.FLOAT)
-  end
-end
-
-function app.adxl345.setup(config)
-  if config.ofs_x and config.ofs_y and config.ofs_z then
-    adxl345.set_offset(config.ofs_x, config.ofs_y, config.ofs_z)
-  end
-
-  if config.thresh_act then
-    adxl345.set(ADXL345_REG_THRES_ACT, config.thresh_act)
-  end
-  if config.thresh_inact then
-    adxl345.set(ADXL345_REG_THRES_INACT, config.thresh_inact)
-  end
-  if config.time_inact then
-    adxl345.set(ADXL345_REG_TIME_INACT, config.time_inact)
-  end
-  if config.act_inact_ctl then
-    adxl345.set(ADXL345_REG_ACT_INACT_CTL, config.act_inact_ctl)
-  end
-  if config.int_map then
-    adxl345.set(ADXL345_REG_INT_MAP, config.int_map)
-  end
-  if config.data_format then
-    adxl345.set(ADXL345_REG_DATA_FORMAT, config.data_format)
-  end
-  if config.fifo_mode and config.fifo_trigger and config.fifo_samples then
-    adxl345.set_fifo_ctl(config.fifo_mode, config.fifo_trigger, config.fifo_samples)
   end
 end
 
@@ -132,7 +65,7 @@ function app.adxl345.print_config()
 end
 
 function app.adxl345.start(handlers)
-  adxl345.set(ADXL345_REG_INT_MAP, 0) -- All INT1
+  adxl345.config({int_map = 0}) -- All INT1
 
   if handlers.activity then
     adxl345.set_int_enable(adxl345.INT_ACTIVITY)

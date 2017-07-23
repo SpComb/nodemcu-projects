@@ -7,9 +7,9 @@ adxl345_config = {
   thresh_inact  = 10, -- 1/16g
   time_inact    = 2,
 
-  act_inact_ctl = ADXL345_ACT_CTL_AC + ADXL345_ACT_CTL_X + ADXL345_ACT_CTL_Y,
+  act_inact_ctl = adxl345.ACT_CTL_AC + adxl345.ACT_CTL_X + adxl345.ACT_CTL_Y,
   int_map       = 0,
-  data_format   = ADXL345_DATA_FORMAT_FULL_RES + ADXL345_DATA_FORMAT_RANGE_16G,
+  data_format   = adxl345.DATA_FORMAT_FULL_RES + adxl345.DATA_FORMAT_RANGE_16G,
   fifo_mode     = adxl345.FIFO_MODE_STREAM,
   fifo_trigger  = adxl345.FIFO_TRIGGER_INT1,
   fifo_samples  = 16,
@@ -85,7 +85,7 @@ function adxl345_trigger(event)
 end
 
 app.adxl345.init()
-app.adxl345.setup(adxl345_config)
+adxl345.setup(adxl345_config)
 adxl345.set_int_enable(adxl345.INT_ACTIVITY)
 adxl345.set_power_ctl(adxl345.POWER_CTL_MEASURE)
 app.adxl345.print_config()
