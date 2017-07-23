@@ -25,16 +25,9 @@ adxl345.print_config()
 
 -- Print state, show absolute values
 function adxl345_print()
-  local fifo_trigger, fifo_entries = adxl345.get_fifo_status()
-
-  print(string.format("ADXL345: FIFO trigger=%s entries=%d ", tostring(fifo_trigger), fifo_entries))
-
-  while fifo_entries > 0 do
-    local x, y, z = adxl345.read_xyz()
-
-    print(string.format("ADXL345 @ %2d: X=%+6d Y=%+6d Z=%+6d ", fifo_entries, x, y, z))
-
-    fifo_entries = fifo_entries - 1
+  for i, xyz in ipairs(adxl345.read_fifo()) do
+    local x, y, z = xyz
+    print(string.format("ADXL345: X=%+6d Y=%+6d Z=%+6d @ %d ", x, y, z, i))
   end
 
   -- clear interrupt
@@ -45,42 +38,49 @@ end
 
 -- Trigger on changes, show deltas
 function adxl345_trigger(event)
-  local fifo_trigger, fifo_entries = adxl345.get_fifo_status()
+  local x0, y0, z0
+  local x1, y1, z1
 
-  print(string.format("ADXL345 @ %s: FIFO trigger=%s entries=%d ", event, tostring(fifo_trigger), fifo_entries))
+  for i, xyz in ipairs(adxl345.read_fifo()) do
+    local x = xyz.x
+    local y = xyz.y
+    local z = xyz.z
 
-  local x0, y0, z0 = adxl345.read_xyz()
+    print(string.format("ADXL345:  X=%+6d  Y=%+6d  Z=%+6d @ %d", x, y, z, i))
 
-  print(string.format("ADXL345:       X=%+6d Y=%+6d Z=%+6d ", x0, y0, z0))
-
-  local x1 = x0
-  local y1 = y0
-  local z1 = z0
-
-  for i = 1, fifo_entries do
-    local x, y, z = adxl345.read_xyz()
-    local dx0 = x - x0
-    local dx1 = x - x1
-    local dy0 = y - y0
-    local dy1 = y - y1
-    local dz0 = z - z0
-    local dz1 = z - z1
-
-    -- XXX: 1/256 <=> 1/16
-    if dx1 > adxl345_config.thresh_act * 16 then
-      print(string.format("ADXL345 @ %2d: +X %+6d          (d0 %+6d, d1 = %+6d)", i, x, dx0, dx1))
-    elseif dx1 < -adxl345_config.thresh_act * 16 then
-      print(string.format("ADXL345 @ %2d: -X %+6d          (d0 %+6d, d1 = %+6d)", i, x, dx0, dx1))
+    if i == 1 then
+      x0 = x
+      y0 = y
+      z0 = z
     else
-      print(string.format("ADXL345 @ %2d:  X %+6d          (d0 %+6d, d1 = %+6d)", i, x, dx0, dx1))
-    end
+      local ex, ey
 
-    if dy1 > adxl345_config.thresh_act * 16 then
-      print(string.format("ADXL345 @ %2d:          +Y %+6d (d0 %+6d, d1 = %+6d)", i, y, dy0, dy1))
-    elseif dy1 < -adxl345_config.thresh_act * 16 then
-      print(string.format("ADXL345 @ %2d:          -Y %+6d (d0 %+6d, d1 = %+6d)", i, y, dy0, dy1))
-    else
-      print(string.format("ADXL345 @ %2d:           Y %+6d (d0 %+6d, d1 = %+6d)", i, y, dy0, dy1))
+      local dx0 = x - x0
+      local dy0 = y - y0
+      local dz0 = z - z0
+
+      local dx1 = x - x1
+      local dy1 = y - y1
+      local dz1 = z - z1
+
+      -- 1/256 <=> 1/16
+      if dx1 * 16 > adxl345_config.thresh_act * 256 then
+        ex = "+X"
+      elseif dx1 * 16 < -adxl345_config.thresh_act * 256 then
+        ex = "-X"
+      else
+        ex = "  "
+      end
+
+      if dy1 * 16 > adxl345_config.thresh_act * 256 then
+        ey = "+Y"
+      elseif dy1 * 16 < -adxl345_config.thresh_act * 256 then
+        ey = "-Y"
+      else
+        ey = "  "
+      end
+
+      print(string.format("ADXL345: %s %+6d %s %+6d", ex, dx1, ey, dy1))
     end
 
     x1 = x

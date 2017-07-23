@@ -254,3 +254,19 @@ function adxl345.read_xyz()
 
   return x, y, z
 end
+
+-- Return { {x, y, z} }
+function adxl345.read_fifo()
+  local entries = {}
+  local fifo_trigger, fifo_entries = adxl345.get_fifo_status()
+
+  print(string.format("ADXL345: FIFO trigger=%s entries=%d ", tostring(fifo_trigger), fifo_entries))
+
+  for i = 1, fifo_entries do
+    local x, y, z = adxl345.read_xyz()
+
+    table.insert(entries, {x = x, y = y, z = z})
+  end
+
+  return entries
+end
