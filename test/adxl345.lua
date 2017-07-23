@@ -17,8 +17,12 @@ adxl345_config = {
 
 -- Print state, show absolute values
 function adxl345_print()
-  for i, xyz in ipairs(app.adxl345.read_fifo()) do
-    print(string.format("ADXL345: X=%+6d Y=%+6d Z=%+6d @ %d ", xyz.x, xyz.y, xyz.z, i))
+  for i, xyz in ipairs(adxl345.read_fifo()) do
+    local x = xyz[1]
+    local y = xyz[2]
+    local z = xyz[3]
+
+    print(string.format("ADXL345: X=%+6d Y=%+6d Z=%+6d @ %d ", x, y, z, i))
   end
 end
 
@@ -27,10 +31,10 @@ function adxl345_trigger(event)
   local x0, y0, z0
   local x1, y1, z1
 
-  for i, xyz in ipairs(app.adxl345.read_fifo()) do
-    local x = xyz.x
-    local y = xyz.y
-    local z = xyz.z
+  for i, xyz in ipairs(adxl345.read_fifo()) do
+    local x = xyz[1]
+    local y = xyz[2]
+    local z = xyz[3]
 
     print(string.format("ADXL345:  X=%+6d  Y=%+6d  Z=%+6d @ %d", x, y, z, i))
 
