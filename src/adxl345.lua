@@ -247,6 +247,23 @@ function adxl345.print_config()
   print(string.format("ADXL345 FIFO_STATUS   %02x", adxl345.read_u8(0x39)))
 end
 
+function adxl345.start(handlers)
+  adxl345.set_int_map(0) -- All INT1
+
+  if handlers.activity then
+    adxl345.int_enable(ADXL345_INT_ACTIVITY)
+    adxl345.on_int1(function(level, when)
+      local int_status = adxl345.read_int()
+
+      if bit.band(int_status, ADXL345_INT_ACTIVITY) ~= 0 then
+        handlers.activity()
+      end
+    end)
+  end
+
+  adxl345.power_ctl(ADXL345_POWER_CTL_MEASURE)
+end
+
 function adxl345.read_xyz()
   local x, y, z = adxl345.read_struct(0x32, "<hhh")
 

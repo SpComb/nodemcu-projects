@@ -94,6 +94,14 @@ function app.start()
   if ADXL345 then
     adxl345.init()
     adxl345.config(ADXL345)
+
+    adxl345.start({
+      activity = function()
+        local x, y, z = adxl345.read_xyz()
+
+        print(string.format("ADXL345 activity: X=%+6d Y=%+6d Z=%+6d", x, y, z))
+      end,
+    })
   end
 
   print("app.start: post heapsize=" .. node.heap())
