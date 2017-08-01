@@ -44,7 +44,11 @@ function wifi_client.init()
     else
       print("wifi_client:init config: ssid=" .. WIFI_SSID)
 
-      wifi.sta.config(wifi_client.ssid, wifi_client.psk, 1)
+      wifi.sta.config({
+        ssid  = wifi_client.ssid,
+        pwd   = wifi_client.psk,
+        auto  = true,
+      })
     end
 end
 
