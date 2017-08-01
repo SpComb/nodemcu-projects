@@ -59,7 +59,7 @@ function app.start()
     })
 
     if ARTNET and P9813_ARTNET_ADDR then
-      artnet.patch_output(P9813_ARTNET_ADDR, p9813, "P9813")
+      artnet.patch_output(P9813_ARTNET_ADDR, p9813.artnet_dmx, "P9813")
     end
   end
 

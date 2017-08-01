@@ -31,13 +31,13 @@ function artnet.init(options)
 end
 
 -- Patch output port at address 0..15
-function artnet.patch_output(addr, driver, description)
+function artnet.patch_output(addr, func, description)
   table.insert(artnet.ports, {
     addr   = addr,
     output = true,
   })
   artnet.outputs[addr] = {
-    driver    = driver,
+    func      = func,
     sequence  = 0,     -- TODO: reset on timeout
   }
 
@@ -216,5 +216,5 @@ function artnet.recv_dmx(port, ip, universe, sequence, data)
   end
 
   -- output
-  output.driver.artnet_dmx(data)
+  output.func(data)
 end
