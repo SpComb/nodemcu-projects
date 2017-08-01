@@ -25,6 +25,9 @@ end
 if ADXL345 then
   dofile("src/adxl345.lua")
 end
+if APA102 then
+  dofile("src/apa102.lua")
+end
 
 function app.init()
   print("app.init: heapsize=" .. node.heap())
@@ -60,6 +63,14 @@ function app.start()
 
     if ARTNET and P9813_ARTNET_ADDR then
       artnet.patch_output(P9813_ARTNET_ADDR, p9813.artnet_dmx, "P9813")
+    end
+  end
+
+  if APA102 then
+    apa102.init()
+
+    if ARTNET and APA102.artnet_addr then
+      artnet.patch_output(APA102.artnet_addr, apa102.send_dmx, "APA102")
     end
   end
 
