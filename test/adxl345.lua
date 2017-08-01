@@ -90,9 +90,11 @@ adxl345.set_int_enable(adxl345.INT_ACTIVITY)
 adxl345.set_power_ctl(adxl345.POWER_CTL_MEASURE)
 app.adxl345.print_config()
 
-tmr.alarm(0, 1000, tmr.ALARM_AUTO, function(timer)
-  adxl345_print()
-end)
+if false then
+  tmr.alarm(0, 1000, tmr.ALARM_AUTO, function(timer)
+    adxl345_print()
+  end)
+end
 
 if app.adxl345.int1_pin then
   app.adxl345.on_int1(function(level, when)

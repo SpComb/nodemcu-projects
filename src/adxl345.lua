@@ -1,32 +1,11 @@
 app.adxl345 = {
   i2c_id    = 0,
-  i2c_sda   = 12,
-  i2c_scl   = 11,
+  i2c_sda   = 2,
+  i2c_scl   = 1,
   i2c_addr  = 0x53, -- SDO pulled to ground
 
-  int1_pin  = 3,
+  int1_pin  = 6,
   int2_pin  = nil,
-
-  devid     = 0xE5,
-
-  config    = {
-    ofs_x         = nil, -- 1/64g
-    ofs_y         = nil, -- 1/64g
-    ofs_z         = nil, -- 1/64g
-
-    thresh_act    = nil, -- 1/16g
-    thresh_inact  = nil, -- 1/16g
-    time_inact    = nil, -- seconds
-
-    act_inact_ctl = nil, -- adxl345.ACT/INACT_CTL_*
-    int_enable    = nil, -- adxl345.INT_*
-    int_map       = nil, -- adxl345.INT_* -> INT2, otherwise INT1
-    data_format   = nil,
-
-    fifo_mode     = nil, -- adxl345.FIFO_MODE_*
-    fifo_trigger  = nil, -- adxl345.FIFO_TRIGGER_*
-    fifo_samples  = nil, -- 0-32
-  }
 }
 
 function app.adxl345.init()
